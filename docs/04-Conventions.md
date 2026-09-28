@@ -27,7 +27,10 @@
 ## Tests
 
 Each test file sits next to the file it tests: `rules.ts` and
-`rules.test.ts`.
+`rules.test.ts`. Vitest files end in `.test.ts`; Playwright files end in
+`.e2e.ts` and sit next to the view they drive (`HealthView.e2e.ts`).
+Playwright starts its own server and Vite on ports 3100 and 5174 with a
+throwaway database, so it never touches a running `npm run dev`.
 
 | Level | Tool | What |
 |---|---|---|

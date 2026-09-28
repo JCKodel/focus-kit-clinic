@@ -12,7 +12,7 @@ import and the server enforces, over one SQLite file.
 |---|---|---|
 | Language | TypeScript, `strict` | The language with the most public code; types let the agent check its own work. |
 | Client | React PWA, built with Vite | Opens in any phone browser, no install; React is the library the agent knows best. |
-| Server | Node with Hono | Small, TypeScript first, runs anywhere Node runs. |
+| Server | Node `>=24` with Hono and `@hono/node-server` | Small, TypeScript first, runs anywhere Node runs. Node runs the server's `.ts` files directly (type stripping), so the server has no build step; imports carry the `.ts` extension and only erasable syntax is allowed (`erasableSyntaxOnly`). |
 | Database | SQLite through `node:sqlite` | One file, no server to run, backup is a copy. The driver ships with Node, so no native package to build on a free host. |
 | Owner sign-in | Password hashed with `node:crypto` scrypt, session in an httpOnly cookie | One owner; a page of code is simpler than an auth library or service. |
 | Tests | Vitest for units and repositories, Playwright for screens | See docs/04. |
@@ -64,7 +64,8 @@ src/
 
 Only repositories touch SQLite; only `api.ts` files call the server. The
 server exposes the JSON routes listed in docs/02. Migrations are plain SQL
-files in `src/server/migrations/`, applied in order at start.
+files in `src/server/migrations/`, applied in order at start and recorded in
+`schema_migration`; docs/02 holds the rules of the runner.
 
 Times are stored as UTC instants. Weekly hours are stored as weekday and
 wall clock times in the clinic's time zone. Slots are computed, never stored.
@@ -91,7 +92,7 @@ type Result<T, E> = { ok: true; value: T } | { ok: false; error: E }
 
 | Name | What runs there | Command |
 |---|---|---|
-| local | client and server on the developer's machine, a local SQLite file | created by the first delivery |
+| local | client and server on the developer's machine, a local SQLite file (`data/clinic.sqlite`) | `npm install`, then `npm run dev`: server on port 3000, Vite on 5173 forwarding `/api/*` |
 | production | a machine at the clinic or a free host | created by the `deploy` delivery |
 
 ## Tried and removed on purpose

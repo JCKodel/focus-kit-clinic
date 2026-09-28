@@ -53,12 +53,15 @@ built, `[x]` done. Edited by conversation in any session.
 ## 5. This project
 
 * **Documentation language:** English. Identifiers in English.
-* **Verify:** `npm run verify`, which runs typecheck, lint, tests and build.
-  Green before anything is declared done. Created by the first delivery.
+* **Verify:** `npm run verify`, which runs typecheck (`tsc`), lint (Biome),
+  the Vitest tests, the Playwright tests and the build, stopping at the first
+  failure. Green before anything is declared done.
 * **Environments:**
   * local: client and server on the developer's machine with a local SQLite
-    file; a delivery leaves it running with its migrations applied; the
-    command is created by the first delivery.
+    file. Command: `npm run dev` (client and server together; migrations
+    apply at start). A delivery leaves the code ready to start and names the
+    command; the person starts it, since the agent may run headless and
+    cannot keep a process running.
   * production: a machine at the clinic or a free host; created by the
     `deploy` delivery, which writes its line here.
 * **Proof of a screen:** Playwright screenshots. Client screens at phone

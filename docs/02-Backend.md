@@ -47,6 +47,15 @@ Opening the file and applying migrations is one function,
 `openMigratedDatabase` in `src/server/start.server.ts`, shared by the server
 start and the setup command.
 
+The file is opened by `openDatabase` (`src/server/database.server.ts`) with a
+5000 ms busy timeout: a connection that finds the file locked by another
+waits up to that long instead of failing at once with `SQLITE_BUSY`. The
+journal mode stays the default rollback journal, one file, so a backup is
+still a copy. `transaction` begins with `BEGIN IMMEDIATE`, taking the write
+lock at the start, where the timeout applies; a deferred `BEGIN` that reads
+first and writes later would fail at once, since SQLite skips the wait there
+to avoid a deadlock.
+
 ## Setup command
 
 `npm run setup` (`src/server/setup.server.ts`) creates the clinic and the

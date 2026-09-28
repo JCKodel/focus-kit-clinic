@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
-import { DatabaseSync } from "node:sqlite";
 import { expect, type Page, test } from "@playwright/test";
+import { openDatabase } from "../../server/database.server.ts";
 import {
 	e2eClinic,
 	e2eDatabasePath,
@@ -116,7 +116,10 @@ test("shows the form for a session older than 30 days", async ({ page }) => {
 		.update(await sessionToken(page))
 		.digest("hex");
 
-	const db = new DatabaseSync(e2eDatabasePath);
+	const opened = openDatabase(e2eDatabasePath);
+	expect(opened.ok).toBe(true);
+	if (!opened.ok) return;
+	const db = opened.value;
 	db.prepare(
 		"UPDATE session SET created_at = ?, expires_at = ? WHERE token_hash = ?",
 	).run("2020-01-01T00:00:00.000Z", "2020-01-31T00:00:00.000Z", tokenHash);

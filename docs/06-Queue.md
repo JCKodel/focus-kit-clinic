@@ -13,7 +13,7 @@ a client can book a free slot, and a client can cancel up to 24 hours before.
 [x] clinic-setup         a setup command creates the clinic and the owner; the owner signs in and out
 [x] professionals        the owner registers, renames and removes professionals
 [x] weekly-hours         the owner sets each professional's weekly hours
-[ ] e2e-database-busy    verify never fails because a test writes to the e2e database while the server writes (SQLITE_BUSY)
+[x] e2e-database-busy    verify never fails because a test writes to the e2e database while the server writes (SQLITE_BUSY)
 [ ] book-appointment     a client sees free slots for 30 days and books with name and phone
 [ ] cancel-appointment   a client cancels up to 24 hours before, or is told why not
 ```

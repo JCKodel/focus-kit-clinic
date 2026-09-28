@@ -46,7 +46,9 @@ before the run, the path of its database, and `signIn` for the owner form).
 Every Playwright test of a run shares that one database, both projects in
 parallel. A test that writes rows names them with its own random tag and
 looks only at those; a state that needs an empty table is proven with a
-mocked answer.
+mocked answer. A test that writes to the e2e database directly opens it
+through `openDatabase` (`database.server.ts`), never `new DatabaseSync`, so
+its write waits for the server's lock instead of failing with `SQLITE_BUSY`.
 
 | Level | Tool | What |
 |---|---|---|

@@ -95,19 +95,31 @@ On a repository with code the default is what the code already does.
 | Use Case | the only place for business rules; pure; takes data, returns a Result | IO, framework, domain exception |
 | Repository | fetch and save; the only place an infra exception becomes a Result | business rules |
 
-**Git.** Three answers, and in every one the agent never commits and never
-merges:
+**Git.** A strategy, not a silver bullet: pick the one that fits how the
+project is worked. Three answers, and in every one a delivery's page and
+build are one change that reverts in one step, because undoing a whole
+delivery must be one step; the agent never commits and never merges:
 
-* **trunk:** everything on the main branch, one delivery at a time, the
-  person reviews and commits after each. The simplest, and what Ninjobs
-  did;
-* **a branch per delivery:** `/apply` works on a branch named after the
-  slug; the person merges. For teams where a delivery is reviewed by
-  someone else before it lands;
-* **a worktree per delivery:** each `/apply` runs in its own git worktree
-  on its own branch, so several agents build different deliveries at the
-  same time; the person merges. Costs a directory per delivery and merges
-  that can conflict when two deliveries touch the same files.
+* **trunk:** everything on the main branch, one delivery at a time. The
+  page waits uncommitted in the working tree between `/propose` and
+  `/apply`; page and build land in one commit, which the person makes
+  after reviewing. Only for one person working
+  alone: with two, their deliveries share one branch and one commit
+  carries the other's half-done work. What Ninjobs did;
+* **a branch per delivery:** `/propose` creates a branch named after the
+  slug and writes the page there; `/apply` builds on it. The branch may
+  carry several commits, the page first and the build after; the person
+  merges it through a pull request in one merge, so reverting the delivery
+  is one revert of that merge. For sequential work reviewed by pull
+  request;
+* **a worktree per delivery:** `/propose` creates a git worktree on a
+  branch named after the slug and writes the page there; `/apply` runs in
+  it; the branch reaches the main branch in one merge, as above. For
+  parallel work: one branch does not touch
+  another, so several agents build different deliveries at the same time.
+  Before running two at once, decide which deliveries can run in parallel
+  and which touch the same files, or their merges conflict. Costs a
+  directory per delivery.
 
 ## The process document (docs/05)
 
@@ -177,8 +189,9 @@ built, `[x]` done. Edited by conversation in any session.
 * **Proof of a screen:** <tool, viewports, reference>, or "no screens".
 * **Publish policy:** when an environment beyond the local one is updated,
   and whether the agent asks first.
-* **Git:** trunk | a branch per delivery | a worktree per delivery. The
-  agent stages; it never commits or merges.
+* **Git:** trunk | a branch per delivery | a worktree per delivery. A
+  delivery's page and build are one change: one commit on trunk, one merge
+  otherwise. The agent stages; it never commits or merges.
 
 ## 6. Commit
 

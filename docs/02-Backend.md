@@ -13,9 +13,9 @@ its exact contract on its page and updates this document.
 | Table | Holds | Created by |
 |---|---|---|
 | `schema_migration` | one row per applied migration: file name, UTC instant applied | `skeleton` (the migration runner, not a migration file) |
-| `clinic` | the one clinic: name, time zone, appointment length | `clinic-setup` |
-| `owner` | the one owner: email, password hash | `clinic-setup` |
-| `session` | owner sessions | `clinic-setup` |
+| `clinic` | the one clinic (`CHECK (id = 1)`): name, IANA time zone, `slot_minutes` from 5 to 240 in steps of 5 | `clinic-setup` (`0001-clinic.sql`) |
+| `owner` | the one owner (`CHECK (id = 1)`): email trimmed and in lower case, password hash | `clinic-setup` (`0001-clinic.sql`) |
+| `session` | owner sessions: SHA-256 of the cookie token (lower-case hex), created and expiry UTC instants; no owner column, there is one owner | `clinic-setup` (`0001-clinic.sql`) |
 | `professional` | name, active or removed | `professionals` |
 | `working_period` | professional, weekday, start and end wall clock time | `weekly-hours` |
 | `appointment` | professional, start instant, client name, client phone, booking code, status | `book-appointment` |
@@ -41,7 +41,51 @@ missing, then runs `migrate` (`src/server/migrate.server.ts`) over
 | Variable | Default | Meaning |
 |---|---|---|
 | `PORT` | `3000` | Port of the Hono server. |
-| `DATABASE_PATH` | `data/clinic.sqlite` | The SQLite file. |
+| `DATABASE_PATH` | `data/clinic.sqlite` | The SQLite file, for the server and for `npm run setup`. |
+
+Opening the file and applying migrations is one function,
+`openMigratedDatabase` in `src/server/start.server.ts`, shared by the server
+start and the setup command.
+
+## Setup command
+
+`npm run setup` (`src/server/setup.server.ts`) creates the clinic and the
+owner, once, on the machine that runs the server:
+
+* It applies pending migrations, then refuses with `The clinic is already
+  set up.` and exit code 1 when the clinic exists, before asking anything.
+* It asks the clinic name, the IANA time zone, the appointment length
+  (empty means 30), the owner email and the password twice, hidden. Each
+  refused answer prints its message and is asked again; two passwords that
+  differ ask both again. The checks are the use cases of
+  `src/features/clinic/rules.ts`.
+* It writes the clinic and the owner in one transaction, the password as a
+  scrypt hash, and exits with code 0.
+* With piped input it reads one answer per line; input that ends early
+  writes nothing and exits with code 1.
+
+There is no setup page: an open setup page on a public host would let the
+first visitor become the owner.
+
+## Owner sign-in
+
+* Password hash (`src/server/password.server.ts`): `node:crypto` scrypt, N
+  16384, r 8, p 1, a random 16 byte salt, a 64 byte key, stored as
+  `scrypt$16384$8$1$<salt base64url>$<key base64url>` and checked with
+  `timingSafeEqual`, reading N, r and p from the string.
+* Sign-in always runs one scrypt check: when the email is not the owner's,
+  or the clinic is not set up, it checks against a fixed hash made at server
+  start from a random password and never stored, and refuses.
+* Session (`src/server/session.server.ts`): a token of 32 random bytes,
+  base64url, sent only in the cookie
+  `session=<token>; HttpOnly; SameSite=Lax; Path=/; Max-Age=2592000`; the
+  database keeps only its SHA-256. It lasts `sessionDays` (30) from sign-in,
+  never slides, and an expired row is deleted when met. Sign-out deletes the
+  row and sends `session=; HttpOnly; SameSite=Lax; Path=/; Max-Age=0`.
+* The owner route check is `requireSession` in `session.server.ts`: no live
+  session answers `401 NotSignedIn`.
+* Not yet: the `Secure` flag (`deploy` adds it) and a limit on wrong
+  attempts (`sign-in-limit`).
 
 ## Access rules
 
@@ -58,3 +102,12 @@ client and forwards `/api/*` to the server.
 | Route | Session | Answer | Created by |
 |---|---|---|---|
 | `GET /api/health` | none | `200 { "status": "ok" }` | `skeleton` |
+| `GET /api/clinic` | none | `200 { "name", "timeZone", "slotMinutes" }` · `404 ClinicNotSetUp` | `clinic-setup` |
+| `POST /api/owner/sign-in` | none | body `{ "email", "password" }`; `200 { "email" }` and the cookie · `401 SignInRefused` (also before setup) · `400 BadRequest` when the body is not that shape | `clinic-setup` |
+| `POST /api/owner/sign-out` | optional | `204`, deletes the session row if any and clears the cookie | `clinic-setup` |
+| `GET /api/owner/session` | yes | `200 { "email" }` · `401 NotSignedIn` | `clinic-setup` |
+
+Errors are `{ "error": { "code": "<Code>" } }`. Besides the domain codes of
+docs/03, two infrastructure codes exist: `BadRequest` (400, a body of the
+wrong shape) and `DatabaseFailed` (500, a SQLite exception caught by a
+repository through `query` in `database.server.ts`).

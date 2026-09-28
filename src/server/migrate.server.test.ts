@@ -121,8 +121,10 @@ describe("migrate", () => {
 		expect(db.isTransaction).toBe(false);
 	});
 
-	it("finds nothing to apply in the real migrations folder", () => {
+	it("applies the real migrations folder, then nothing the second time", () => {
 		const real = fileURLToPath(new URL("./migrations/", import.meta.url));
+		expect(migrate(db, real)).toEqual({ ok: true, value: ["0001-clinic.sql"] });
 		expect(migrate(db, real)).toEqual({ ok: true, value: [] });
+		expect(tables()).toEqual(["clinic", "owner", "session"]);
 	});
 });

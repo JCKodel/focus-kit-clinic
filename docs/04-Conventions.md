@@ -30,7 +30,17 @@ Each test file sits next to the file it tests: `rules.ts` and
 `rules.test.ts`. Vitest files end in `.test.ts`; Playwright files end in
 `.e2e.ts` and sit next to the view they drive (`HealthView.e2e.ts`).
 Playwright starts its own server and Vite on ports 3100 and 5174 with a
-throwaway database, so it never touches a running `npm run dev`.
+throwaway database, so it never touches a running `npm run dev`. Before the
+server starts, it deletes that database and runs the real `npm run setup`
+with the answers of `src/server/e2eClinic.server.ts` piped in. Tests run at
+390×844 (project `phone`); the owner screen's tests run again at 1280×800
+(project `desktop`).
+
+Test fixtures that more than one feature uses live in the server shell with
+the `.server.ts` suffix, since they read Node modules and client code must
+never import them: `testDatabase.server.ts` (Vitest, an in-memory SQLite with
+the real migrations) and `e2eClinic.server.ts` (Playwright, the clinic set up
+before the run and the path of its database).
 
 | Level | Tool | What |
 |---|---|---|

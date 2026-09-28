@@ -10,7 +10,7 @@ a client can book a free slot, and a client can cancel up to 24 hours before.
 
 ```
 [x] skeleton             empty PWA and server in one project, npm run verify, first screenshot
-[ ] clinic-setup         a setup command creates the clinic and the owner; the owner signs in and out
+[x] clinic-setup         a setup command creates the clinic and the owner; the owner signs in and out
 [ ] professionals        the owner registers, renames and removes professionals
 [ ] weekly-hours         the owner sets each professional's weekly hours
 [ ] book-appointment     a client sees free slots for 30 days and books with name and phone
@@ -26,6 +26,8 @@ runs outside the developer's machine with no paid service.
 ```
 [ ] absences             the owner records a professional's absences, and their slots disappear
 [ ] owner-schedule       the owner sees the day's appointments per professional
+[ ] owner-password       a command sets a new owner password, for the owner who forgot it
+[ ] sign-in-limit        repeated wrong sign-ins are slowed down, before the app is public
 [ ] install              web manifest with the clinic's name and icon, so a phone offers "Add to home screen"
 [ ] deploy               the app runs on a clinic machine or a free host, with a backup of the data
 ```

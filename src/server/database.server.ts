@@ -21,3 +21,16 @@ export function openDatabase(
 		return err({ code: "DatabaseOpenFailed", path, message });
 	}
 }
+
+export type DatabaseFailed = { code: "DatabaseFailed"; message: string };
+
+// Where a repository's SQLite exception becomes a Result. First use: the
+// clinic repository; second use: the session queries.
+export function query<T>(run: () => T): Result<T, DatabaseFailed> {
+	try {
+		return ok(run());
+	} catch (error) {
+		const message = error instanceof Error ? error.message : String(error);
+		return err({ code: "DatabaseFailed", message });
+	}
+}

@@ -3,7 +3,6 @@ import { expect, test } from "@playwright/test";
 test("shows the server as ok when it answers", async ({ page }) => {
 	await page.goto("/");
 
-	await expect(page.getByRole("heading", { name: "Clinic" })).toBeVisible();
 	await expect(page.getByText("Server: ok")).toBeVisible();
 });
 

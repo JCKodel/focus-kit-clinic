@@ -8,6 +8,7 @@
   "scripts": {
     "dev": "node --watch src/server/main.server.ts & vite",
     "server": "node src/server/main.server.ts",
+    "setup": "node src/server/setup.server.ts",
     "typecheck": "tsc --noEmit",
     "lint": "biome check .",
     "test": "vitest run",

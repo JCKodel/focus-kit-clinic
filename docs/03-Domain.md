@@ -26,11 +26,28 @@ new concept enters here first.
 | Outside hours | `OutsideWorkingHours` | The refusal of a booking at a time that is not a slot of the professional. |
 | Outside window | `OutsideBookingWindow` | The refusal of a booking in the past or beyond the booking window. |
 | Not found | `AppointmentNotFound` | The refusal when phone and booking code match no booked appointment. |
+| Set up | `setUpClinic` | Create the clinic and the owner, once, from the setup command. |
+| Session | `Session` | The proof, held in a cookie, that the owner signed in; lasts `sessionDays`. |
+| Session length | `sessionDays` | How long a session lasts from sign-in: 30 days. |
+| Sign in | `signIn` | The owner proves email and password and receives a session. |
+| Sign out | `signOut` | End the owner's session. |
+| Already set up | `ClinicAlreadySetUp` | The refusal of a second setup. |
+| Not set up | `ClinicNotSetUp` | The answer when the clinic does not exist yet. |
+| Invalid name | `InvalidClinicName` | The refusal of a clinic name that is blank or longer than 80 characters. |
+| Unknown time zone | `UnknownTimeZone` | The refusal of a time zone that is not an IANA name. |
+| Invalid length | `InvalidSlotMinutes` | The refusal of an appointment length that is not a whole number from 5 to 240 in steps of 5. |
+| Invalid email | `InvalidEmail` | The refusal of an owner email without exactly one `@` with text on both sides, or with spaces. |
+| Password too short | `PasswordTooShort` | The refusal of an owner password under 12 characters. |
+| Passwords differ | `PasswordsDiffer` | The refusal when the password typed twice at setup does not match. |
+| Sign-in refused | `SignInRefused` | The refusal of a sign-in whose email or password is wrong; it never says which. |
+| Not signed in | `NotSignedIn` | The refusal of an owner request without a live session. |
 
 ## Entities
 
 * **Clinic:** name, `clinicTimeZone`, `slotMinutes`. Exactly one.
 * **Owner:** email, password hash. Exactly one.
+* **Session:** token hash, created instant, expiry instant. Belongs to the
+  one owner.
 * **Professional:** name, active or removed.
 * **WorkingPeriod:** professional, weekday, start, end, in clinic time. Start
   before end; periods of one professional on one weekday do not overlap.
@@ -54,3 +71,7 @@ new concept enters here first.
    phone number is compared with digits only.
 7. Instants are stored in UTC; weekdays, hours and dates are computed in the
    clinic time.
+8. The clinic and the owner are set up once; a second setup is refused with
+   `ClinicAlreadySetUp` and changes nothing.
+9. A session is live while the current time is before its expiry; the owner
+   email is compared trimmed and in lower case.

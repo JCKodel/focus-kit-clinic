@@ -46,10 +46,19 @@ src/
     use<Feature>.ts        client Orchestrator: a React hook publishing one state
     <Feature>View.tsx      View
     strings.ts             every text the user reads in this feature
-  app/                     client shell: entry, router, layout
-  server/                  server shell: entry, database, migrations, session
-  lib/                     what two features already share, e.g. result.ts
+  app/                     client shell: entry, path switch, layout
+  server/                  server shell: entry, setup command, database,
+                           migrations, password, session
+  lib/                     what two features already share: result.ts,
+                           email.ts (trim and lower case the owner email),
+                           request.ts (fetch to Result, for every api.ts)
 ```
+
+* The app shell has no router library: `src/app/main.tsx` shows the owner
+  screen when `location.pathname` is `/owner` and the home page otherwise.
+* Server routes that need the database are functions of it
+  (`clinicRoute(db)`), so Vitest drives them through Hono's `app.request`
+  against an in-memory SQLite (`testDatabase.server.ts`).
 
 * A slice has only the files it needs. A file appears when it pays its way.
 * Client code never imports a `*.server.ts` file.
@@ -77,12 +86,16 @@ type Result<T, E> = { ok: true; value: T } | { ok: false; error: E }
 ```
 
 1. A repository catches the database exception and returns a Result with an
-   infrastructure error.
+   infrastructure error: its SQL runs inside `query` from
+   `src/server/database.server.ts`, which gives `DatabaseFailed`.
 2. A use case returns a Result with a domain error from docs/03 (for example
    `SlotTaken`, `CancellationTooLate`). It never throws.
 3. The route maps the error to an HTTP status and a body
    `{ "error": { "code": "<Code>" } }`.
-4. `api.ts` turns a non-2xx response or a network failure into a Result.
+4. `api.ts` turns a non-2xx response or a network failure into a Result,
+   through `request` in `src/lib/request.ts`: each call names the statuses
+   it expects as refusals (`404` is `ClinicNotSetUp`) and reads the body;
+   anything else is `ServerUnreachable`.
 5. The hook publishes a state that holds the error; the view shows the
    message from `strings.ts` for that code.
 
@@ -92,7 +105,7 @@ type Result<T, E> = { ok: true; value: T } | { ok: false; error: E }
 
 | Name | What runs there | Command |
 |---|---|---|
-| local | client and server on the developer's machine, a local SQLite file (`data/clinic.sqlite`) | `npm install`, then `npm run dev`: server on port 3000, Vite on 5173 forwarding `/api/*` |
+| local | client and server on the developer's machine, a local SQLite file (`data/clinic.sqlite`) | `npm install`, `npm run setup` once, then `npm run dev`: server on port 3000, Vite on 5173 forwarding `/api/*`; the owner signs in at `/owner` |
 | production | a machine at the clinic or a free host | created by the `deploy` delivery |
 
 ## Tried and removed on purpose

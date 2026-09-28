@@ -1,4 +1,5 @@
 import type { FormEvent } from "react";
+import { WeeklyHoursView } from "../weeklyHours/WeeklyHoursView.tsx";
 import type { Professional } from "./rules.ts";
 import { errorStrings, strings } from "./strings.ts";
 import { type OpenRow, useProfessionals } from "./useProfessionals.ts";
@@ -19,6 +20,9 @@ const rowStyle = {
 	marginBottom: 8,
 } as const;
 
+// The hours editor takes a line of its own, under the name and its buttons.
+const underTheName = { flexBasis: "100%" } as const;
+
 const list = { listStyle: "none", padding: 0 } as const;
 
 export function ProfessionalsView() {
@@ -32,6 +36,8 @@ export function ProfessionalsView() {
 		openRemove,
 		remove,
 		close,
+		openHours,
+		hours,
 	} = useProfessionals();
 	const { busy } = state;
 
@@ -96,10 +102,26 @@ export function ProfessionalsView() {
 				<button
 					type="button"
 					disabled={busy}
+					onClick={() => openHours(professional)}
+				>
+					{strings.hours}
+				</button>
+				<button
+					type="button"
+					disabled={busy}
 					onClick={() => openRemove(professional)}
 				>
 					{strings.remove}
 				</button>
+				{open?.mode === "hours" && (
+					<div style={underTheName}>
+						<WeeklyHoursView
+							professional={professional}
+							busy={busy}
+							section={hours}
+						/>
+					</div>
+				)}
 			</li>
 		);
 	}

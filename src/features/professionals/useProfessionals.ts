@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import type { HoursSection } from "../weeklyHours/useWeeklyHours.ts";
 import {
 	deleteProfessional,
 	fetchProfessionals,
@@ -15,8 +16,10 @@ export type ListError =
 
 export type ProfessionalsError = ListError | NameRefusal;
 
-// At most one row is open, to rename or to confirm a removal.
+// At most one row is open: to edit its hours, to rename, or to confirm a
+// removal.
 export type OpenRow =
+	| { id: number; mode: "hours" }
 	| { id: number; mode: "rename"; name: string; error?: NameRefusal }
 	| { id: number; mode: "remove" };
 
@@ -167,6 +170,34 @@ export function useProfessionals() {
 		setState((s) => ({ ...s, error: undefined, row: undefined }));
 	}, []);
 
+	const openHours = useCallback((professional: Professional) => {
+		setState((s) => ({
+			...s,
+			error: undefined,
+			row: { id: professional.id, mode: "hours" },
+		}));
+	}, []);
+
+	// The hours editor fetches and saves on its own, and reports here: the
+	// section keeps the busy state, the open row and the messages above the
+	// list.
+	const hours: HoursSection = useMemo(
+		() => ({
+			saving: start,
+			saved: () => setState((s) => ({ ...s, busy: false, row: undefined })),
+			failed: () => setState((s) => ({ ...s, busy: false })),
+			refused: (code) => {
+				if (code === "ProfessionalNotFound") {
+					reloadGone();
+					return;
+				}
+				setState((s) => ({ ...s, busy: false, error: code }));
+			},
+			close,
+		}),
+		[start, reloadGone, close],
+	);
+
 	return {
 		state,
 		typeAddName,
@@ -177,5 +208,7 @@ export function useProfessionals() {
 		openRemove,
 		remove,
 		close,
+		openHours,
+		hours,
 	};
 }

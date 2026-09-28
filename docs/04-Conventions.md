@@ -35,7 +35,7 @@ server starts, it deletes that database and runs the real `npm run setup`
 with the answers of `src/server/e2eClinic.server.ts` piped in. Tests run at
 390×844 (project `phone`); the owner screen's tests run again at 1280×800
 (project `desktop`, which lists their files: `OwnerView.e2e.ts`,
-`ProfessionalsView.e2e.ts`).
+`ProfessionalsView.e2e.ts`, `WeeklyHoursView.e2e.ts`).
 
 Test fixtures that more than one feature uses live in the server shell with
 the `.server.ts` suffix, since they read Node modules and client code must

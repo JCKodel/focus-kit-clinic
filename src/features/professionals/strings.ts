@@ -7,6 +7,7 @@ export const strings = {
 	name: "Name",
 	add: "Add",
 	rename: "Rename",
+	hours: "Hours",
 	newName: (name: string) => `New name for ${name}`,
 	save: "Save",
 	cancel: "Cancel",

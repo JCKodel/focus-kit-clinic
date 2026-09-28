@@ -1,5 +1,6 @@
 import type { DatabaseSync } from "node:sqlite";
 import { type Context, Hono } from "hono";
+import { idOf } from "../../lib/id.ts";
 import { requireSession } from "../../server/session.server.ts";
 import {
 	findActiveProfessionals,
@@ -23,14 +24,6 @@ function isNameBody(body: unknown): body is NameBody {
 		"name" in body &&
 		typeof body.name === "string"
 	);
-}
-
-// A positive whole number, else undefined: the route answers 404 as for an
-// unknown id.
-function idOf(param: string): number | undefined {
-	if (!/^[1-9]\d*$/.test(param)) return undefined;
-	const id = Number(param);
-	return Number.isSafeInteger(id) ? id : undefined;
 }
 
 const refusalStatus = {

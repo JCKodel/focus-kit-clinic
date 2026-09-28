@@ -17,7 +17,7 @@ its exact contract on its page and updates this document.
 | `owner` | the one owner (`CHECK (id = 1)`): email trimmed and in lower case, password hash | `clinic-setup` (`0001-clinic.sql`) |
 | `session` | owner sessions: SHA-256 of the cookie token (lower-case hex), created and expiry UTC instants; no owner column, there is one owner | `clinic-setup` (`0001-clinic.sql`) |
 | `professional` | name trimmed, 1 to 80 characters; `removed_at`, the UTC removal instant, `NULL` while active. Removing keeps the row. No unique index on the name: SQLite's `lower()` folds ASCII only, so the use case enforces docs/03 rule 10 | `professionals` (`0002-professional.sql`) |
-| `working_period` | professional, weekday, start and end wall clock time | `weekly-hours` |
+| `working_period` | professional, ISO weekday (`CHECK` 1 to 7), `start_time` and `end_time` as zero-padded `HH:MM` in clinic time (`CHECK (start_time < end_time)`), indexed by professional, weekday and start. Overlap and minimum length have no database guard: the use case enforces them. A removed professional's rows stay | `weekly-hours` (`0003-working-period.sql`) |
 | `appointment` | professional, start instant, client name, client phone, booking code, status | `book-appointment` |
 
 A unique index on `appointment (professional_id, starts_at)` over booked
@@ -111,6 +111,8 @@ client and forwards `/api/*` to the server.
 | `POST /api/owner/professionals` | yes | body `{ "name" }`; `201 { "id", "name" }` · `400 InvalidProfessionalName` · `409 ProfessionalNameTaken` · `400 BadRequest` · `401 NotSignedIn` | `professionals` |
 | `PATCH /api/owner/professionals/:id` | yes | body `{ "name" }`; `200 { "id", "name" }` · `400 InvalidProfessionalName` · `409 ProfessionalNameTaken` · `404 ProfessionalNotFound` · `400 BadRequest` · `401 NotSignedIn` | `professionals` |
 | `DELETE /api/owner/professionals/:id` | yes | `204`, sets `removed_at`, never deletes the row · `404 ProfessionalNotFound` · `401 NotSignedIn` | `professionals` |
+| `GET /api/owner/professionals/:id/hours` | yes | `200 { "slotMinutes", "periods": [ { "weekday", "start", "end" } ] }`, ordered by weekday then start · `404 ProfessionalNotFound` · `401 NotSignedIn` | `weekly-hours` |
+| `PUT /api/owner/professionals/:id/hours` | yes | body `{ "periods": [ { "weekday": 1..7, "start", "end" } ] }`; replaces the whole week in one transaction; `200`, the same shape as `GET` · `400 InvalidWorkingPeriod` · `400 WorkingPeriodTooShort` · `400 WorkingPeriodsOverlap` · `404 ProfessionalNotFound` · `400 BadRequest` · `401 NotSignedIn` | `weekly-hours` |
 
 Owner routes check in this order: session (`401`), body shape (`400
 BadRequest`), the professional exists and is active (`404`), then the rule
@@ -120,4 +122,4 @@ BadRequest`), the professional exists and is active (`404`), then the rule
 Errors are `{ "error": { "code": "<Code>" } }`. Besides the domain codes of
 docs/03, two infrastructure codes exist: `BadRequest` (400, a body of the
 wrong shape) and `DatabaseFailed` (500, a SQLite exception caught by a
-repository through `query` in `database.server.ts`).
+repository through `query` or `transaction` in `database.server.ts`).

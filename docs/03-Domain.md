@@ -46,7 +46,12 @@ new concept enters here first.
 | Remove | `removeProfessional` | The owner marks a professional removed: kept in the database, gone from every list, never active again. |
 | Invalid professional name | `InvalidProfessionalName` | The refusal of a professional name that is blank or longer than 80 characters. |
 | Name taken | `ProfessionalNameTaken` | The refusal of a name another active professional already has, ignoring case. |
-| Professional not found | `ProfessionalNotFound` | The refusal of a rename or removal of a professional that does not exist or is removed. |
+| Professional not found | `ProfessionalNotFound` | The refusal of a rename, a removal, or a read or save of weekly hours, for a professional that does not exist or is removed. |
+| Weekday | `Weekday` | A day of the week as an ISO number: 1 Monday to 7 Sunday. |
+| Set hours | `setWeeklyHours` | The owner replaces a professional's whole weekly hours at once. |
+| Invalid period | `InvalidWorkingPeriod` | The refusal of a working period whose start or end is not a time from 00:00 to 23:55 in steps of 5 minutes, or whose end is not after its start. |
+| Period too short | `WorkingPeriodTooShort` | The refusal of a working period shorter than `slotMinutes`, which would hold no appointment. |
+| Periods overlap | `WorkingPeriodsOverlap` | The refusal of two working periods of one professional on one weekday that share a minute. |
 
 ## Entities
 
@@ -56,8 +61,10 @@ new concept enters here first.
   one owner.
 * **Professional:** name, removal instant. Active while it has none;
   removed once it has one, and never active again.
-* **WorkingPeriod:** professional, weekday, start, end, in clinic time. Start
-  before end; periods of one professional on one weekday do not overlap.
+* **WorkingPeriod:** professional, weekday, start, end, in clinic time, as
+  `HH:MM` from 00:00 to 23:55 in steps of 5 minutes. Start before end, at
+  least `slotMinutes` apart; periods of one professional on one weekday do
+  not overlap, and one may end where the next starts.
 * **Appointment:** professional, start instant, client name, client phone,
   booking code, status. The end is start plus `slotMinutes`.
 
@@ -84,3 +91,5 @@ new concept enters here first.
    email is compared trimmed and in lower case.
 10. Two active professionals never share a name, compared trimmed and
     ignoring case. A removed professional's name is free again.
+11. Weekly hours are saved whole: every working period passes, or none is
+    stored and the previous weekly hours stay.

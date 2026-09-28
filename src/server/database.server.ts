@@ -34,3 +34,19 @@ export function query<T>(run: () => T): Result<T, DatabaseFailed> {
 		return err({ code: "DatabaseFailed", message });
 	}
 }
+
+// A query whose statements are written together or not at all. First use:
+// saveClinicAndOwner; second use: replaceWorkingPeriods.
+export function transaction<T>(
+	db: DatabaseSync,
+	run: () => T,
+): Result<T, DatabaseFailed> {
+	const done = query(() => {
+		db.exec("BEGIN");
+		const value = run();
+		db.exec("COMMIT");
+		return value;
+	});
+	if (!done.ok && db.isTransaction) db.exec("ROLLBACK");
+	return done;
+}

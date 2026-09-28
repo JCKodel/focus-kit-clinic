@@ -125,9 +125,19 @@ describe("migrate", () => {
 		const real = fileURLToPath(new URL("./migrations/", import.meta.url));
 		expect(migrate(db, real)).toEqual({
 			ok: true,
-			value: ["0001-clinic.sql", "0002-professional.sql"],
+			value: [
+				"0001-clinic.sql",
+				"0002-professional.sql",
+				"0003-working-period.sql",
+			],
 		});
 		expect(migrate(db, real)).toEqual({ ok: true, value: [] });
-		expect(tables()).toEqual(["clinic", "owner", "professional", "session"]);
+		expect(tables()).toEqual([
+			"clinic",
+			"owner",
+			"professional",
+			"session",
+			"working_period",
+		]);
 	});
 });

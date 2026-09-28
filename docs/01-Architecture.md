@@ -53,7 +53,8 @@ src/
                            email.ts (trim and lower case the owner email),
                            name.ts (trim, 1 to 80 characters: clinic and
                            professional names),
-                           request.ts (fetch to Result, for every api.ts)
+                           request.ts (fetch to Result, for every api.ts),
+                           id.ts (the positive whole id in a route path)
 ```
 
 * The app shell has no router library: `src/app/main.tsx` shows the owner
@@ -89,7 +90,8 @@ type Result<T, E> = { ok: true; value: T } | { ok: false; error: E }
 
 1. A repository catches the database exception and returns a Result with an
    infrastructure error: its SQL runs inside `query` from
-   `src/server/database.server.ts`, which gives `DatabaseFailed`.
+   `src/server/database.server.ts`, which gives `DatabaseFailed`; writes
+   that go together run inside `transaction`, which also rolls back.
 2. A use case returns a Result with a domain error from docs/03 (for example
    `SlotTaken`, `CancellationTooLate`). It never throws.
 3. The route maps the error to an HTTP status and a body

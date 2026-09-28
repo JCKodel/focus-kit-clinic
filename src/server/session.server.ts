@@ -80,7 +80,8 @@ export function deleteSession(
 }
 
 // The owner route check: a live session is required, else 401 NotSignedIn.
-// An expired row is deleted when met. First use: GET /api/owner/session.
+// An expired row is deleted when met. First use: GET /api/owner/session;
+// second use: the owner routes of professionals.
 export function requireSession(db: DatabaseSync): MiddlewareHandler {
 	return async (c, next) => {
 		const token = readSessionToken(c);

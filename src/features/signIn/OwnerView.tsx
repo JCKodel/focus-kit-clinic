@@ -1,4 +1,5 @@
 import { type FormEvent, useState } from "react";
+import { ProfessionalsView } from "../professionals/ProfessionalsView.tsx";
 import { errorStrings, strings } from "./strings.ts";
 import { useOwner } from "./useOwner.ts";
 
@@ -34,6 +35,7 @@ export function OwnerView() {
 				>
 					{strings.signOut}
 				</button>
+				<ProfessionalsView />
 			</>
 		);
 	}

@@ -123,8 +123,11 @@ describe("migrate", () => {
 
 	it("applies the real migrations folder, then nothing the second time", () => {
 		const real = fileURLToPath(new URL("./migrations/", import.meta.url));
-		expect(migrate(db, real)).toEqual({ ok: true, value: ["0001-clinic.sql"] });
+		expect(migrate(db, real)).toEqual({
+			ok: true,
+			value: ["0001-clinic.sql", "0002-professional.sql"],
+		});
 		expect(migrate(db, real)).toEqual({ ok: true, value: [] });
-		expect(tables()).toEqual(["clinic", "owner", "session"]);
+		expect(tables()).toEqual(["clinic", "owner", "professional", "session"]);
 	});
 });

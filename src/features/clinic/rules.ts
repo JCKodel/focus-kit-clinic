@@ -1,4 +1,5 @@
 import { normaliseEmail } from "../../lib/email.ts";
+import { checkName } from "../../lib/name.ts";
 import { err, ok, type Result } from "../../lib/result.ts";
 
 export type SetupAnswers = {
@@ -28,7 +29,6 @@ export type SetupRefusal =
 	| "PasswordsDiffer";
 
 export const defaultSlotMinutes = 30;
-const maxNameLength = 80;
 const minPasswordLength = 12;
 
 // Lengths count characters, not UTF-16 units, so "é" or an emoji is one.
@@ -39,11 +39,8 @@ function length(text: string): number {
 export function checkClinicName(
 	raw: string,
 ): Result<string, "InvalidClinicName"> {
-	const name = raw.trim();
-	if (name === "" || length(name) > maxNameLength) {
-		return err("InvalidClinicName");
-	}
-	return ok(name);
+	const name = checkName(raw);
+	return name.ok ? name : err("InvalidClinicName");
 }
 
 export function checkTimeZone(raw: string): Result<string, "UnknownTimeZone"> {

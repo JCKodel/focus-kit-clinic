@@ -34,13 +34,19 @@ throwaway database, so it never touches a running `npm run dev`. Before the
 server starts, it deletes that database and runs the real `npm run setup`
 with the answers of `src/server/e2eClinic.server.ts` piped in. Tests run at
 390×844 (project `phone`); the owner screen's tests run again at 1280×800
-(project `desktop`).
+(project `desktop`, which lists their files: `OwnerView.e2e.ts`,
+`ProfessionalsView.e2e.ts`).
 
 Test fixtures that more than one feature uses live in the server shell with
 the `.server.ts` suffix, since they read Node modules and client code must
 never import them: `testDatabase.server.ts` (Vitest, an in-memory SQLite with
 the real migrations) and `e2eClinic.server.ts` (Playwright, the clinic set up
-before the run and the path of its database).
+before the run, the path of its database, and `signIn` for the owner form).
+
+Every Playwright test of a run shares that one database, both projects in
+parallel. A test that writes rows names them with its own random tag and
+looks only at those; a state that needs an empty table is proven with a
+mocked answer.
 
 | Level | Tool | What |
 |---|---|---|

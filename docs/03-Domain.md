@@ -41,6 +41,12 @@ new concept enters here first.
 | Passwords differ | `PasswordsDiffer` | The refusal when the password typed twice at setup does not match. |
 | Sign-in refused | `SignInRefused` | The refusal of a sign-in whose email or password is wrong; it never says which. |
 | Not signed in | `NotSignedIn` | The refusal of an owner request without a live session. |
+| Add | `addProfessional` | The owner registers a new professional by name. |
+| Rename | `renameProfessional` | The owner changes an active professional's name. |
+| Remove | `removeProfessional` | The owner marks a professional removed: kept in the database, gone from every list, never active again. |
+| Invalid professional name | `InvalidProfessionalName` | The refusal of a professional name that is blank or longer than 80 characters. |
+| Name taken | `ProfessionalNameTaken` | The refusal of a name another active professional already has, ignoring case. |
+| Professional not found | `ProfessionalNotFound` | The refusal of a rename or removal of a professional that does not exist or is removed. |
 
 ## Entities
 
@@ -48,7 +54,8 @@ new concept enters here first.
 * **Owner:** email, password hash. Exactly one.
 * **Session:** token hash, created instant, expiry instant. Belongs to the
   one owner.
-* **Professional:** name, active or removed.
+* **Professional:** name, removal instant. Active while it has none;
+  removed once it has one, and never active again.
 * **WorkingPeriod:** professional, weekday, start, end, in clinic time. Start
   before end; periods of one professional on one weekday do not overlap.
 * **Appointment:** professional, start instant, client name, client phone,
@@ -75,3 +82,5 @@ new concept enters here first.
    `ClinicAlreadySetUp` and changes nothing.
 9. A session is live while the current time is before its expiry; the owner
    email is compared trimmed and in lower case.
+10. Two active professionals never share a name, compared trimmed and
+    ignoring case. A removed professional's name is free again.

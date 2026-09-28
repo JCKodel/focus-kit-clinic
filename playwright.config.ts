@@ -36,7 +36,7 @@ export default defineConfig({
 		{
 			// Owner screens are also used on a desktop (docs/05).
 			name: "desktop",
-			testMatch: "**/OwnerView.e2e.ts",
+			testMatch: ["**/OwnerView.e2e.ts", "**/ProfessionalsView.e2e.ts"],
 			use: {
 				...devices["Desktop Chrome"],
 				viewport: { width: 1280, height: 800 },

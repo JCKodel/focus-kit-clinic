@@ -1,13 +1,11 @@
 import { createHash } from "node:crypto";
 import { DatabaseSync } from "node:sqlite";
 import { expect, type Page, test } from "@playwright/test";
-import { e2eClinic, e2eDatabasePath } from "../../server/e2eClinic.server.ts";
-
-async function signIn(page: Page, email: string, password: string) {
-	await page.getByLabel("Email").fill(email);
-	await page.getByLabel("Password").fill(password);
-	await page.getByRole("button", { name: "Sign in" }).click();
-}
+import {
+	e2eClinic,
+	e2eDatabasePath,
+	signIn,
+} from "../../server/e2eClinic.server.ts";
 
 async function expectSignedOut(page: Page) {
 	await expect(

@@ -51,6 +51,8 @@ src/
                            migrations, password, session
   lib/                     what two features already share: result.ts,
                            email.ts (trim and lower case the owner email),
+                           name.ts (trim, 1 to 80 characters: clinic and
+                           professional names),
                            request.ts (fetch to Result, for every api.ts)
 ```
 

@@ -11,7 +11,7 @@ a client can book a free slot, and a client can cancel up to 24 hours before.
 ```
 [x] skeleton             empty PWA and server in one project, npm run verify, first screenshot
 [x] clinic-setup         a setup command creates the clinic and the owner; the owner signs in and out
-[ ] professionals        the owner registers, renames and removes professionals
+[x] professionals        the owner registers, renames and removes professionals
 [ ] weekly-hours         the owner sets each professional's weekly hours
 [ ] book-appointment     a client sees free slots for 30 days and books with name and phone
 [ ] cancel-appointment   a client cancels up to 24 hours before, or is told why not

@@ -16,7 +16,7 @@ its exact contract on its page and updates this document.
 | `clinic` | the one clinic (`CHECK (id = 1)`): name, IANA time zone, `slot_minutes` from 5 to 240 in steps of 5 | `clinic-setup` (`0001-clinic.sql`) |
 | `owner` | the one owner (`CHECK (id = 1)`): email trimmed and in lower case, password hash | `clinic-setup` (`0001-clinic.sql`) |
 | `session` | owner sessions: SHA-256 of the cookie token (lower-case hex), created and expiry UTC instants; no owner column, there is one owner | `clinic-setup` (`0001-clinic.sql`) |
-| `professional` | name, active or removed | `professionals` |
+| `professional` | name trimmed, 1 to 80 characters; `removed_at`, the UTC removal instant, `NULL` while active. Removing keeps the row. No unique index on the name: SQLite's `lower()` folds ASCII only, so the use case enforces docs/03 rule 10 | `professionals` (`0002-professional.sql`) |
 | `working_period` | professional, weekday, start and end wall clock time | `weekly-hours` |
 | `appointment` | professional, start instant, client name, client phone, booking code, status | `book-appointment` |
 
@@ -83,7 +83,8 @@ first visitor become the owner.
   never slides, and an expired row is deleted when met. Sign-out deletes the
   row and sends `session=; HttpOnly; SameSite=Lax; Path=/; Max-Age=0`.
 * The owner route check is `requireSession` in `session.server.ts`: no live
-  session answers `401 NotSignedIn`.
+  session answers `401 NotSignedIn`. Every `/api/owner/*` route but sign-in
+  and sign-out uses it.
 * Not yet: the `Secure` flag (`deploy` adds it) and a limit on wrong
   attempts (`sign-in-limit`).
 
@@ -106,6 +107,15 @@ client and forwards `/api/*` to the server.
 | `POST /api/owner/sign-in` | none | body `{ "email", "password" }`; `200 { "email" }` and the cookie · `401 SignInRefused` (also before setup) · `400 BadRequest` when the body is not that shape | `clinic-setup` |
 | `POST /api/owner/sign-out` | optional | `204`, deletes the session row if any and clears the cookie | `clinic-setup` |
 | `GET /api/owner/session` | yes | `200 { "email" }` · `401 NotSignedIn` | `clinic-setup` |
+| `GET /api/professionals` | none | `200 { "professionals": [ { "id", "name" } ] }`, active only, alphabetical ignoring case, ties by id | `professionals` |
+| `POST /api/owner/professionals` | yes | body `{ "name" }`; `201 { "id", "name" }` · `400 InvalidProfessionalName` · `409 ProfessionalNameTaken` · `400 BadRequest` · `401 NotSignedIn` | `professionals` |
+| `PATCH /api/owner/professionals/:id` | yes | body `{ "name" }`; `200 { "id", "name" }` · `400 InvalidProfessionalName` · `409 ProfessionalNameTaken` · `404 ProfessionalNotFound` · `400 BadRequest` · `401 NotSignedIn` | `professionals` |
+| `DELETE /api/owner/professionals/:id` | yes | `204`, sets `removed_at`, never deletes the row · `404 ProfessionalNotFound` · `401 NotSignedIn` | `professionals` |
+
+Owner routes check in this order: session (`401`), body shape (`400
+BadRequest`), the professional exists and is active (`404`), then the rule
+(`400`, then `409`). An `:id` that is not a positive whole number answers
+`404` like an unknown one.
 
 Errors are `{ "error": { "code": "<Code>" } }`. Besides the domain codes of
 docs/03, two infrastructure codes exist: `BadRequest` (400, a body of the

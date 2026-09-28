@@ -1,6 +1,7 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { BookingView } from "../features/appointments/BookingView.tsx";
+import { CancelView } from "../features/appointments/CancelView.tsx";
 import { RememberedView } from "../features/appointments/RememberedView.tsx";
 import { ClinicView } from "../features/clinic/ClinicView.tsx";
 import { HealthView } from "../features/health/HealthView.tsx";
@@ -20,6 +21,7 @@ function App() {
 		<main>
 			<ClinicView />
 			<RememberedView />
+			<CancelView />
 			<BookingView />
 			<HealthView />
 		</main>

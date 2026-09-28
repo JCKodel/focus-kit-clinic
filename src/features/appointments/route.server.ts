@@ -7,13 +7,21 @@ import { findClinic } from "../clinic/repository.server.ts";
 import { findActiveProfessionals } from "../professionals/repository.server.ts";
 import type { Professional } from "../professionals/rules.ts";
 import { findWorkingPeriods } from "../weeklyHours/repository.server.ts";
-import { findBookedStarts, insertAppointment } from "./repository.server.ts";
+import {
+	cancelAppointment,
+	findBookedAppointment,
+	findBookedStarts,
+	insertAppointment,
+} from "./repository.server.ts";
 import {
 	type BookingRefusal,
 	book,
 	bookingCodeAlphabet,
 	bookingCodeLength,
+	cancel,
+	checkClientPhone,
 	freeSlots,
+	normalizeBookingCode,
 	type SlotInput,
 } from "./rules.ts";
 
@@ -40,6 +48,16 @@ function isBookingBody(body: unknown): body is BookingBody {
 	);
 }
 
+type CancelBody = { clientPhone: string; bookingCode: string };
+
+function isCancelBody(body: unknown): body is CancelBody {
+	if (typeof body !== "object" || body === null) return false;
+	return (
+		typeof Reflect.get(body, "clientPhone") === "string" &&
+		typeof Reflect.get(body, "bookingCode") === "string"
+	);
+}
+
 // The three time refusals share 409: the client shows them alike.
 const refusalStatus: Record<BookingRefusal, 400 | 409> = {
 	InvalidClientName: 400,
@@ -55,6 +73,10 @@ function databaseFailed(c: Context) {
 
 function notFound(c: Context) {
 	return c.json({ error: { code: "ProfessionalNotFound" } }, 404);
+}
+
+function appointmentNotFound(c: Context) {
+	return c.json({ error: { code: "AppointmentNotFound" } }, 404);
 }
 
 function drawBookingCode(): string {
@@ -103,8 +125,12 @@ function slotsOf(
 	});
 }
 
-// The client's free slots and booking, public. Checks run in the order: body
-// shape, professional exists and is active, the use case, the insert.
+// The client's free slots, booking and cancellation, public. A booking checks
+// in the order: body shape, professional exists and is active, the use case,
+// the insert. A cancellation checks in the order: body shape, phone and code
+// (a refusal is AppointmentNotFound, so a guess learns nothing), the booked
+// appointment, the use case, the update. Both read, decide and write with no
+// await between, so no other request of the process interleaves.
 export function appointmentsRoute(db: DatabaseSync) {
 	return new Hono()
 		.get("/professionals/:id/slots", (c) => {
@@ -146,5 +172,36 @@ export function appointmentsRoute(db: DatabaseSync) {
 				},
 				201,
 			);
+		})
+		.post("/appointments/cancel", async (c) => {
+			const body: unknown = await c.req.json().catch(() => undefined);
+			if (!isCancelBody(body)) {
+				return c.json({ error: { code: "BadRequest" } }, 400);
+			}
+			const phone = checkClientPhone(body.clientPhone);
+			const code = normalizeBookingCode(body.bookingCode);
+			if (!phone.ok || !code.ok) return appointmentNotFound(c);
+			const found = findBookedAppointment(db, code.value, phone.value);
+			if (!found.ok) return databaseFailed(c);
+			const appointment = found.value;
+			if (!appointment) return appointmentNotFound(c);
+			const clinic = findClinic(db);
+			if (!clinic.ok) return databaseFailed(c);
+			// An appointment exists only once the clinic is set up; kept for the types.
+			if (!clinic.value) {
+				return c.json({ error: { code: "ClinicNotSetUp" } }, 500);
+			}
+			const cancelled = cancel(appointment.startsAt, new Date());
+			if (!cancelled.ok) {
+				return c.json({ error: { code: cancelled.error } }, 409);
+			}
+			const updated = cancelAppointment(db, appointment.id);
+			if (!updated.ok) return databaseFailed(c);
+			if (!updated.value) return appointmentNotFound(c);
+			return c.json({
+				startsAt: appointment.startsAt,
+				timeZone: clinic.value.timeZone,
+				professional: appointment.professional,
+			});
 		});
 }

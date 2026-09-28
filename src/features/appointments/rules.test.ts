@@ -3,10 +3,12 @@ import type { WorkingPeriod } from "../weeklyHours/rules.ts";
 import {
 	type BookingRequest,
 	book,
+	cancel,
 	cancellationDeadline,
 	checkClientName,
 	checkClientPhone,
 	freeSlots,
+	normalizeBookingCode,
 	type SlotInput,
 } from "./rules.ts";
 
@@ -326,5 +328,67 @@ describe("cancellationDeadline", () => {
 		expect(cancellationDeadline("2026-10-25T12:00:00.000Z")).toEqual(
 			new Date("2026-10-24T12:00:00.000Z"),
 		);
+	});
+});
+
+describe("cancel", () => {
+	// The deadline of at("08:00") is Monday 28 September, 08:00 UTC.
+	const deadline = Date.parse("2026-09-28T08:00:00.000Z");
+
+	it("succeeds one millisecond before and exactly at the deadline", () => {
+		for (const now of [deadline - 1, deadline]) {
+			expect(cancel(at("08:00"), new Date(now))).toEqual({
+				ok: true,
+				value: undefined,
+			});
+		}
+	});
+
+	it("is too late one millisecond after the deadline", () => {
+		expect(cancel(at("08:00"), new Date(deadline + 1))).toEqual({
+			ok: false,
+			error: "CancellationTooLate",
+		});
+	});
+
+	it("is too late for a start already past", () => {
+		expect(cancel(at("08:00"), new Date(at("09:00")))).toEqual({
+			ok: false,
+			error: "CancellationTooLate",
+		});
+	});
+});
+
+describe("normalizeBookingCode", () => {
+	it("trims and upper-cases", () => {
+		expect(normalizeBookingCode(" k7mxq2 ")).toEqual({
+			ok: true,
+			value: "K7MXQ2",
+		});
+		expect(normalizeBookingCode("K7MXQ2")).toEqual({
+			ok: true,
+			value: "K7MXQ2",
+		});
+	});
+
+	it("refuses 5 and 7 characters, characters outside the alphabet, and blank", () => {
+		for (const raw of [
+			"K7MXQ",
+			"K7MXQ22",
+			"K7MXQ0",
+			"K7MXQO",
+			"K7MXQI",
+			"K7MXQL",
+			"k7mxql",
+			"K7MXQ1",
+			"K7M XQ",
+			"",
+			"      ",
+		]) {
+			expect(normalizeBookingCode(raw)).toEqual({
+				ok: false,
+				error: "AppointmentNotFound",
+			});
+		}
 	});
 });

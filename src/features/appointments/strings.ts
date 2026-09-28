@@ -1,4 +1,5 @@
 import type { Weekday } from "../weeklyHours/rules.ts";
+import type { CancelError } from "./api.ts";
 import { wallTimeOf, weekdayOf } from "./clinicTime.ts";
 import type { BookingError } from "./useBooking.ts";
 
@@ -69,6 +70,20 @@ export const strings = {
 	done: "Done",
 	tryAgain: "Try again",
 	remembered: "Your appointments",
+	cancel: "Cancel",
+	confirmCancel: "Cancel this appointment?",
+	yesCancel: "Yes, cancel",
+	keepIt: "Keep it",
+	noLongerCancellable: "Can no longer be cancelled in the app.",
+	cancelledLine: (line: string) =>
+		`Cancelled: ${line}. The time is free again.`,
+	noLongerBooked: "This appointment is no longer booked.",
+	cancelWithCode: "Cancel with a booking code",
+	cancelHeading: "Cancel an appointment",
+	bookingCode: "Booking code",
+	cancelAppointment: "Cancel appointment",
+	cancelled: "Cancelled",
+	timeFreeAgain: "The time is free again.",
 	// A no-break space keeps "Code" and the code on one line.
 	rememberedLine: (line: string, code: string) => `${line} · Code ${code}`,
 };
@@ -79,4 +94,12 @@ export const errorStrings: Record<BookingError, string> = {
 	SlotTaken: "This time is no longer free. Pick another.",
 	ProfessionalNotFound: "This professional is no longer available.",
 	ServerUnreachable: "The server cannot be reached. Try again.",
+};
+
+export const cancelErrorStrings: Record<CancelError["code"], string> = {
+	AppointmentNotFound:
+		"No booked appointment matches this phone number and code.",
+	CancellationTooLate:
+		"Appointments can be cancelled up to 24 hours before they start. This one can no longer be cancelled in the app.",
+	ServerUnreachable: errorStrings.ServerUnreachable,
 };

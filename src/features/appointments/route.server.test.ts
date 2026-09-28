@@ -8,6 +8,7 @@ import {
 	setRemovedAt,
 } from "../professionals/repository.server.ts";
 import { replaceWorkingPeriods } from "../weeklyHours/repository.server.ts";
+import { insertAppointment } from "./repository.server.ts";
 import { appointmentsRoute } from "./route.server.ts";
 
 // Monday 28 September 2026, 01:00 in Lisbon.
@@ -284,5 +285,216 @@ describe("POST /api/appointments", () => {
 
 		expect(rows()).toHaveLength(1);
 		expect((await (await slots("1")).json()).slots).toEqual([]);
+	});
+});
+
+describe("POST /api/appointments/cancel", () => {
+	function postCancel(body: unknown) {
+		return app.request("/api/appointments/cancel", {
+			method: "POST",
+			headers: { "Content-Type": "application/json" },
+			body: typeof body === "string" ? body : JSON.stringify(body),
+		});
+	}
+
+	// Books tuesday[0] with Ana Lima for "+351 912 345 678"; answers the code.
+	async function booked(): Promise<string> {
+		return (await (await post(valid)).json()).bookingCode;
+	}
+
+	function statuses() {
+		return rows().map((row) => row.status);
+	}
+
+	const answer = {
+		startsAt: tuesday[0],
+		timeZone: "Europe/Lisbon",
+		professional: { id: 1, name: "Ana Lima" },
+	};
+
+	it("cancels: 200 with the start, the clinic time zone and the professional, keeping the row", async () => {
+		const bookingCode = await booked();
+
+		const response = await postCancel({
+			clientPhone: "351912345678",
+			bookingCode,
+		});
+
+		expect(response.status).toBe(200);
+		expect(await response.json()).toEqual(answer);
+		expect(rows()).toEqual([
+			expect.objectContaining({
+				booking_code: bookingCode,
+				status: "cancelled",
+			}),
+		]);
+	});
+
+	it("frees the time for the next booking", async () => {
+		const bookingCode = await booked();
+		await postCancel({ clientPhone: valid.clientPhone, bookingCode });
+
+		expect((await (await slots("1")).json()).slots.slice(0, 4)).toEqual(
+			tuesday,
+		);
+		expect((await post({ ...valid, clientName: "Other" })).status).toBe(201);
+	});
+
+	it("reads a lower-case code with spaces around it and a phone with spaces", async () => {
+		const bookingCode = await booked();
+
+		const response = await postCancel({
+			clientPhone: " 351 912 345 678 ",
+			bookingCode: ` ${bookingCode.toLowerCase()} `,
+		});
+
+		expect(response.status).toBe(200);
+		expect(statuses()).toEqual(["cancelled"]);
+	});
+
+	it("answers 400 BadRequest to a body of the wrong shape, changing nothing", async () => {
+		const bookingCode = await booked();
+		for (const body of [
+			"not json",
+			[],
+			{},
+			{ clientPhone: valid.clientPhone },
+			{ bookingCode },
+			{ clientPhone: 351912345678, bookingCode },
+			{ clientPhone: valid.clientPhone, bookingCode: null },
+		]) {
+			await expectError(await postCancel(body), 400, "BadRequest");
+		}
+		expect(statuses()).toEqual(["booked"]);
+	});
+
+	it("answers 404 to a phone or code that matches nothing or cannot be one", async () => {
+		const bookingCode = await booked();
+		const other = bookingCode === "AAAAAA" ? "BBBBBB" : "AAAAAA";
+		for (const [clientPhone, code] of [
+			["912345679", bookingCode],
+			[valid.clientPhone, other],
+			["91a2345678", bookingCode],
+			["12345", bookingCode],
+			[valid.clientPhone, "K7MXQ0"],
+			[valid.clientPhone, `${bookingCode}2`],
+			["", ""],
+		]) {
+			await expectError(
+				await postCancel({ clientPhone, bookingCode: code }),
+				404,
+				"AppointmentNotFound",
+			);
+		}
+		expect(statuses()).toEqual(["booked"]);
+	});
+
+	it("checks the body, then phone and code, then the appointment, then the rule", async () => {
+		const bookingCode = await booked();
+		vi.setSystemTime(new Date("2026-09-29T07:00:00.000Z"));
+
+		await expectError(
+			await postCancel({ clientPhone: "x", bookingCode: 1 }),
+			400,
+			"BadRequest",
+		);
+		await expectError(
+			await postCancel({ clientPhone: "x", bookingCode }),
+			404,
+			"AppointmentNotFound",
+		);
+		await expectError(
+			await postCancel({ clientPhone: "919999999", bookingCode }),
+			404,
+			"AppointmentNotFound",
+		);
+		await expectError(
+			await postCancel({ clientPhone: valid.clientPhone, bookingCode }),
+			409,
+			"CancellationTooLate",
+		);
+	});
+
+	it("answers 404 to a second cancellation", async () => {
+		const bookingCode = await booked();
+		const body = { clientPhone: valid.clientPhone, bookingCode };
+
+		expect((await postCancel(body)).status).toBe(200);
+		await expectError(await postCancel(body), 404, "AppointmentNotFound");
+	});
+
+	it("gives 200 to exactly one of two cancellations racing", async () => {
+		const bookingCode = await booked();
+		const body = { clientPhone: valid.clientPhone, bookingCode };
+
+		const [first, second] = await Promise.all([
+			postCancel(body),
+			postCancel(body),
+		]);
+
+		expect([first.status, second.status].sort()).toEqual([200, 404]);
+		const refused = first.status === 404 ? first : second;
+		expect(await refused.json()).toEqual({
+			error: { code: "AppointmentNotFound" },
+		});
+		expect(statuses()).toEqual(["cancelled"]);
+	});
+
+	it("cancels at the deadline, and answers 409 one millisecond later, keeping it booked", async () => {
+		const bookingCode = await booked();
+		const body = { clientPhone: valid.clientPhone, bookingCode };
+		// 24 hours before tuesday[0].
+		const deadline = Date.parse("2026-09-28T08:00:00.000Z");
+
+		vi.setSystemTime(deadline + 1);
+		await expectError(await postCancel(body), 409, "CancellationTooLate");
+		expect(statuses()).toEqual(["booked"]);
+
+		vi.setSystemTime(deadline);
+		expect((await postCancel(body)).status).toBe(200);
+	});
+
+	it("answers 409 to an appointment already started", async () => {
+		const bookingCode = await booked();
+		vi.setSystemTime(new Date("2026-09-29T08:10:00.000Z"));
+
+		await expectError(
+			await postCancel({ clientPhone: valid.clientPhone, bookingCode }),
+			409,
+			"CancellationTooLate",
+		);
+		expect(statuses()).toEqual(["booked"]);
+	});
+
+	it("cancels an appointment of a removed professional", async () => {
+		const bookingCode = await booked();
+		setRemovedAt(db, 1, "2026-09-28T00:00:00.000Z");
+
+		const response = await postCancel({
+			clientPhone: valid.clientPhone,
+			bookingCode,
+		});
+
+		expect(response.status).toBe(200);
+		expect(await response.json()).toEqual(answer);
+	});
+
+	it("answers 404 before setup, and 500 for an appointment without a clinic", async () => {
+		db.close();
+		db = memoryDatabase();
+		app = new Hono().route("/api", appointmentsRoute(db));
+		const body = { clientPhone: "912345678", bookingCode: "K7MXQ2" };
+
+		await expectError(await postCancel(body), 404, "AppointmentNotFound");
+
+		insertProfessional(db, "Ana Lima");
+		insertAppointment(db, {
+			professionalId: 1,
+			startsAt: tuesday[0],
+			clientName: "Rita Sousa",
+			clientPhone: "912345678",
+			bookingCode: "K7MXQ2",
+		});
+		await expectError(await postCancel(body), 500, "ClinicNotSetUp");
 	});
 });

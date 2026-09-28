@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import {
+	forget,
 	onRememberedChange,
 	type RememberedAppointment,
 	readRemembered,
@@ -68,6 +69,41 @@ it("tells the listeners after a write", () => {
 	remember(later, now);
 
 	expect(listener).toHaveBeenCalledTimes(1);
+});
+
+it("forgets the one with the code, keeps the others, and drops the past", () => {
+	stored.set("appointments", JSON.stringify([later, sooner, past]));
+
+	expect(forget("SOON22", now)).toEqual({ ok: true, value: undefined });
+
+	expect(JSON.parse(stored.get("appointments") ?? "")).toEqual([later]);
+});
+
+it("forgets nothing else for a code it does not remember, and tells the listeners", () => {
+	stored.set("appointments", JSON.stringify([later, sooner]));
+	const listener = vi.fn();
+	const stop = onRememberedChange(listener);
+
+	expect(forget("NONE22", now)).toEqual({ ok: true, value: undefined });
+	stop();
+
+	expect(readRemembered(now)).toEqual([sooner, later]);
+	expect(listener).toHaveBeenCalledTimes(1);
+});
+
+it("answers StorageFailed when the phone refuses to forget", () => {
+	stored.set("appointments", JSON.stringify([sooner]));
+	vi.stubGlobal("localStorage", {
+		getItem: (key: string) => stored.get(key) ?? null,
+		setItem: () => {
+			throw new Error("SecurityError");
+		},
+	});
+
+	expect(forget("SOON22", now)).toEqual({
+		ok: false,
+		error: { code: "StorageFailed" },
+	});
 });
 
 it("answers StorageFailed when the phone refuses to store", () => {

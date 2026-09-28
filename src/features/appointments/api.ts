@@ -16,8 +16,18 @@ type NotFound = { code: "ProfessionalNotFound" };
 // shown alike: the time is not free.
 type NotFree = { code: "SlotTaken" };
 
+export type Cancelled = {
+	startsAt: string;
+	timeZone: string;
+	professional: Professional;
+};
+
+type NotBooked = { code: "AppointmentNotFound" };
+type TooLate = { code: "CancellationTooLate" };
+
 export type SlotsError = NotFound | ServerUnreachable;
 export type BookError = NotFound | NotFree | ServerUnreachable;
+export type CancelError = NotBooked | TooLate | ServerUnreachable;
 
 export type BookingBody = {
 	professionalId: number;
@@ -39,23 +49,42 @@ function slotsOf(body: unknown): Slots | undefined {
 		: undefined;
 }
 
-function bookedOf(body: unknown): Booked | undefined {
-	if (typeof body !== "object" || body === null) return undefined;
-	const bookingCode: unknown = Reflect.get(body, "bookingCode");
-	const startsAt: unknown = Reflect.get(body, "startsAt");
-	const clientPhone: unknown = Reflect.get(body, "clientPhone");
+// The `professional` of an answer. First use: bookedOf; second: cancelledOf.
+function professionalOf(body: object): Professional | undefined {
 	const professional: unknown = Reflect.get(body, "professional");
 	if (typeof professional !== "object" || professional === null) {
 		return undefined;
 	}
 	const id: unknown = Reflect.get(professional, "id");
 	const name: unknown = Reflect.get(professional, "name");
+	return typeof id === "number" && typeof name === "string"
+		? { id, name }
+		: undefined;
+}
+
+function bookedOf(body: unknown): Booked | undefined {
+	if (typeof body !== "object" || body === null) return undefined;
+	const bookingCode: unknown = Reflect.get(body, "bookingCode");
+	const startsAt: unknown = Reflect.get(body, "startsAt");
+	const clientPhone: unknown = Reflect.get(body, "clientPhone");
+	const professional = professionalOf(body);
 	return typeof bookingCode === "string" &&
 		typeof startsAt === "string" &&
 		typeof clientPhone === "string" &&
-		typeof id === "number" &&
-		typeof name === "string"
-		? { bookingCode, startsAt, clientPhone, professional: { id, name } }
+		professional
+		? { bookingCode, startsAt, clientPhone, professional }
+		: undefined;
+}
+
+function cancelledOf(body: unknown): Cancelled | undefined {
+	if (typeof body !== "object" || body === null) return undefined;
+	const startsAt: unknown = Reflect.get(body, "startsAt");
+	const timeZone: unknown = Reflect.get(body, "timeZone");
+	const professional = professionalOf(body);
+	return typeof startsAt === "string" &&
+		typeof timeZone === "string" &&
+		professional
+		? { startsAt, timeZone, professional }
 		: undefined;
 }
 
@@ -85,5 +114,27 @@ export function postAppointment(
 		},
 		bookedOf,
 		{ 404: { code: "ProfessionalNotFound" }, 409: { code: "SlotTaken" } },
+	);
+}
+
+// Phone and code travel in the body, never in the path, so they stay out of
+// access logs. The client always sends two strings, so a 400 would mean the
+// server cannot be relied on: it reads as ServerUnreachable.
+export function postCancellation(body: {
+	clientPhone: string;
+	bookingCode: string;
+}): Promise<Result<Cancelled, CancelError>> {
+	return request<Cancelled, NotBooked | TooLate>(
+		"/api/appointments/cancel",
+		{
+			method: "POST",
+			headers: { "Content-Type": "application/json" },
+			body: JSON.stringify(body),
+		},
+		cancelledOf,
+		{
+			404: { code: "AppointmentNotFound" },
+			409: { code: "CancellationTooLate" },
+		},
 	);
 }

@@ -146,3 +146,26 @@ export function book(
 export function cancellationDeadline(startsAt: string): Date {
 	return new Date(Date.parse(startsAt) - cancellationNoticeMs);
 }
+
+// A cancellation succeeds while `now` is at or before the deadline (docs/03,
+// invariant 4). A start that is not a date has no deadline to be before.
+export function cancel(
+	startsAt: string,
+	now: Date,
+): Result<void, "CancellationTooLate"> {
+	return now.getTime() <= cancellationDeadline(startsAt).getTime()
+		? ok(undefined)
+		: err("CancellationTooLate");
+}
+
+// The code as stored: trimmed, upper-cased, `bookingCodeLength` characters of
+// the alphabet. Anything else cannot be a code, so it matches no appointment.
+export function normalizeBookingCode(
+	raw: string,
+): Result<string, "AppointmentNotFound"> {
+	const code = raw.trim().toUpperCase();
+	const valid =
+		code.length === bookingCodeLength &&
+		[...code].every((c) => bookingCodeAlphabet.includes(c));
+	return valid ? ok(code) : err("AppointmentNotFound");
+}

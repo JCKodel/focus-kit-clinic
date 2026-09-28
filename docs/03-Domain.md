@@ -96,7 +96,9 @@ new concept enters here first.
 5. A cancelled appointment is kept with status `cancelled`, and its time is
    free again.
 6. A client is identified by phone number and booking code together; the
-   phone number is compared with digits only.
+   phone number is compared with digits only, the booking code is compared
+   trimmed and upper-cased, and a phone or code that cannot be one is
+   `AppointmentNotFound`.
 7. Instants are stored in UTC; weekdays, hours and dates are computed in the
    clinic time.
 8. The clinic and the owner are set up once; a second setup is refused with

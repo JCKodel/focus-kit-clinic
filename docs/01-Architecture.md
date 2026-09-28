@@ -76,7 +76,9 @@ src/
 
 Only repositories touch SQLite; only `api.ts` files call the server; only
 `appointments/remembered.ts` touches the phone's local storage (key
-`appointments`), where a failure is a `Result` like any other. The
+`appointments`): it remembers a booked appointment and forgets a cancelled
+one, dropping past ones on each write, and a failure is a `Result` like any
+other. The
 server exposes the JSON routes listed in docs/02. Migrations are plain SQL
 files in `src/server/migrations/`, applied in order at start and recorded in
 `schema_migration`; docs/02 holds the rules of the runner.

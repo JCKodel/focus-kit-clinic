@@ -61,18 +61,38 @@ export function onRememberedChange(listener: () => void): () => void {
 	};
 }
 
-// Adds the new appointment and drops those whose start is past. A storage
-// failure (private mode, full) is a Result the caller may ignore.
-export function remember(
-	appointment: RememberedAppointment,
+// Stores those still to come and tells the listeners. A storage failure
+// (private mode, full) is a Result the caller may ignore. First use:
+// remember; second: forget.
+function keep(
+	appointments: RememberedAppointment[],
 	now: Date,
 ): Result<void, StorageFailed> {
 	try {
-		const kept = toCome([...readAll(), appointment], now);
-		localStorage.setItem(key, JSON.stringify(kept));
+		localStorage.setItem(key, JSON.stringify(toCome(appointments, now)));
 	} catch {
 		return err({ code: "StorageFailed" });
 	}
 	for (const listener of listeners) listener();
 	return ok(undefined);
+}
+
+// Adds the new appointment and drops those whose start is past.
+export function remember(
+	appointment: RememberedAppointment,
+	now: Date,
+): Result<void, StorageFailed> {
+	return keep([...readAll(), appointment], now);
+}
+
+// Drops the one with this code, once cancelled, and those whose start is
+// past. A code the phone does not remember changes nothing else.
+export function forget(
+	bookingCode: string,
+	now: Date,
+): Result<void, StorageFailed> {
+	return keep(
+		readAll().filter((a) => a.bookingCode !== bookingCode),
+		now,
+	);
 }

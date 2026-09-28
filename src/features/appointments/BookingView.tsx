@@ -7,6 +7,7 @@ import {
 	summary,
 	timeLabel,
 } from "./strings.ts";
+import { action, buttons, field } from "./styles.ts";
 import { useBooking } from "./useBooking.ts";
 
 // Full width on a phone and tall enough for a thumb.
@@ -20,19 +21,6 @@ const choice = {
 } as const;
 
 const list = { listStyle: "none", padding: 0, margin: 0 } as const;
-
-const field = {
-	display: "block",
-	width: "100%",
-	maxWidth: 320,
-	boxSizing: "border-box",
-	minHeight: 44,
-	fontSize: "1em",
-} as const;
-
-const buttons = { display: "flex", gap: 8, flexWrap: "wrap" } as const;
-
-const action = { minHeight: 44, minWidth: 88, fontSize: "1em" } as const;
 
 const above = { marginBottom: 12 } as const;
 

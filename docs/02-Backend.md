@@ -131,6 +131,7 @@ client and forwards `/api/*` to the server.
 
 | `GET /api/professionals/:id/slots` | none | `200 { "timeZone", "slots": [ "<UTC instant>" ] }`, the free slot starts of the next 30 days, ascending; `[]` when none · `404 ProfessionalNotFound` | `book-appointment` |
 | `POST /api/appointments` | none | body `{ "professionalId", "startsAt", "clientName", "clientPhone" }`; `201 { "bookingCode", "startsAt", "clientPhone", "professional": { "id", "name" } }` · `400 BadRequest` · `404 ProfessionalNotFound` · `400 InvalidClientName` · `400 InvalidPhoneNumber` · `409 OutsideBookingWindow` · `409 OutsideWorkingHours` · `409 SlotTaken` | `book-appointment` |
+| `POST /api/appointments/cancel` | none | body `{ "clientPhone", "bookingCode" }`; sets `status` to `cancelled`, never deletes the row; `200 { "startsAt", "timeZone", "professional": { "id", "name" } }` · `400 BadRequest` · `404 AppointmentNotFound` · `409 CancellationTooLate` | `cancel-appointment` |
 
 Public routes that take a professional check in this order: body shape
 (`400 BadRequest`), the professional exists and is active (`404`), then the
@@ -142,6 +143,20 @@ inserts with no `await` between them, so no other request of the process
 interleaves; the unique index covers any other process. Before setup there
 is no professional, so both answer `404`; a professional without a clinic
 answers `500 ClinicNotSetUp`.
+
+The cancellation route checks in this order: body shape (`400
+BadRequest`); the phone through `checkClientPhone` and the code through
+`normalizeBookingCode`, where a refusal of either is `404
+AppointmentNotFound`, so a guess learns nothing; the booked appointment with
+that code and those digits, whose professional may be removed (`404`); the
+use case `cancel` (`409 CancellationTooLate`); the update `WHERE status =
+'booked'`, where no row changed is `404`. It reads, runs `cancel` and
+updates with no `await` between them; the update's condition covers any
+other process, so of two cancellations racing one is `200` and the other
+`404`. Phone and code travel in the body, never in the path, so they stay
+out of access logs. An appointment without a clinic answers `500
+ClinicNotSetUp`. No limit on guesses yet (`sign-in-limit`,
+`fake-bookings`).
 
 Owner routes check in this order: session (`401`), body shape (`400
 BadRequest`), the professional exists and is active (`404`), then the rule

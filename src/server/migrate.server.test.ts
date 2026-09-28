@@ -129,10 +129,12 @@ describe("migrate", () => {
 				"0001-clinic.sql",
 				"0002-professional.sql",
 				"0003-working-period.sql",
+				"0004-appointment.sql",
 			],
 		});
 		expect(migrate(db, real)).toEqual({ ok: true, value: [] });
 		expect(tables()).toEqual([
+			"appointment",
 			"clinic",
 			"owner",
 			"professional",

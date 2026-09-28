@@ -18,10 +18,16 @@ its exact contract on its page and updates this document.
 | `session` | owner sessions: SHA-256 of the cookie token (lower-case hex), created and expiry UTC instants; no owner column, there is one owner | `clinic-setup` (`0001-clinic.sql`) |
 | `professional` | name trimmed, 1 to 80 characters; `removed_at`, the UTC removal instant, `NULL` while active. Removing keeps the row. No unique index on the name: SQLite's `lower()` folds ASCII only, so the use case enforces docs/03 rule 10 | `professionals` (`0002-professional.sql`) |
 | `working_period` | professional, ISO weekday (`CHECK` 1 to 7), `start_time` and `end_time` as zero-padded `HH:MM` in clinic time (`CHECK (start_time < end_time)`), indexed by professional, weekday and start. Overlap and minimum length have no database guard: the use case enforces them. A removed professional's rows stay | `weekly-hours` (`0003-working-period.sql`) |
-| `appointment` | professional, start instant, client name, client phone, booking code, status | `book-appointment` |
+| `appointment` | professional; `starts_at`, the UTC start instant, always written with `toISOString()` so equal instants are equal text and text order is time order; client name trimmed, 1 to 80 characters; client phone as digits only, 6 to 15; `booking_code`, 6 characters of `ABCDEFGHJKMNPQRSTUVWXYZ23456789`, `UNIQUE`; `status` `booked` or `cancelled` (`CHECK`), `booked` by default | `book-appointment` (`0004-appointment.sql`) |
 
-A unique index on `appointment (professional_id, starts_at)` over booked
-appointments is the last guard against two bookings racing for one slot.
+The partial unique index `appointment_booked_slot` on `appointment
+(professional_id, starts_at) WHERE status = 'booked'` is the last guard
+against two bookings racing for one slot. Slots never partly overlap
+(ADR-0005), so one index on the start suffices; a cancelled row does not
+hold its slot. The booking code is drawn by the server with
+`crypto.randomInt(31)` per character; a clash fails the `UNIQUE` and
+answers `500 DatabaseFailed`, and the client's "Try again" draws a new one.
+No retry loop.
 
 ## Start and migrations
 
@@ -122,6 +128,20 @@ client and forwards `/api/*` to the server.
 | `DELETE /api/owner/professionals/:id` | yes | `204`, sets `removed_at`, never deletes the row · `404 ProfessionalNotFound` · `401 NotSignedIn` | `professionals` |
 | `GET /api/owner/professionals/:id/hours` | yes | `200 { "slotMinutes", "periods": [ { "weekday", "start", "end" } ] }`, ordered by weekday then start · `404 ProfessionalNotFound` · `401 NotSignedIn` | `weekly-hours` |
 | `PUT /api/owner/professionals/:id/hours` | yes | body `{ "periods": [ { "weekday": 1..7, "start", "end" } ] }`; replaces the whole week in one transaction; `200`, the same shape as `GET` · `400 InvalidWorkingPeriod` · `400 WorkingPeriodTooShort` · `400 WorkingPeriodsOverlap` · `404 ProfessionalNotFound` · `400 BadRequest` · `401 NotSignedIn` | `weekly-hours` |
+
+| `GET /api/professionals/:id/slots` | none | `200 { "timeZone", "slots": [ "<UTC instant>" ] }`, the free slot starts of the next 30 days, ascending; `[]` when none · `404 ProfessionalNotFound` | `book-appointment` |
+| `POST /api/appointments` | none | body `{ "professionalId", "startsAt", "clientName", "clientPhone" }`; `201 { "bookingCode", "startsAt", "clientPhone", "professional": { "id", "name" } }` · `400 BadRequest` · `404 ProfessionalNotFound` · `400 InvalidClientName` · `400 InvalidPhoneNumber` · `409 OutsideBookingWindow` · `409 OutsideWorkingHours` · `409 SlotTaken` | `book-appointment` |
+
+Public routes that take a professional check in this order: body shape
+(`400 BadRequest`), the professional exists and is active (`404`), then the
+use case in its own order, then the insert, where a conflict on
+`appointment_booked_slot` is `409 SlotTaken`. The three time refusals share
+`409` because the client shows them alike; the body keeps the exact code.
+The booking route reads the periods and the booked starts, runs `book` and
+inserts with no `await` between them, so no other request of the process
+interleaves; the unique index covers any other process. Before setup there
+is no professional, so both answer `404`; a professional without a clinic
+answers `500 ClinicNotSetUp`.
 
 Owner routes check in this order: session (`401`), body shape (`400
 BadRequest`), the professional exists and is active (`404`), then the rule

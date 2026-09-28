@@ -46,12 +46,15 @@ new concept enters here first.
 | Remove | `removeProfessional` | The owner marks a professional removed: kept in the database, gone from every list, never active again. |
 | Invalid professional name | `InvalidProfessionalName` | The refusal of a professional name that is blank or longer than 80 characters. |
 | Name taken | `ProfessionalNameTaken` | The refusal of a name another active professional already has, ignoring case. |
-| Professional not found | `ProfessionalNotFound` | The refusal of a rename, a removal, or a read or save of weekly hours, for a professional that does not exist or is removed. |
+| Professional not found | `ProfessionalNotFound` | The refusal of a rename, a removal, a read or save of weekly hours, a read of free slots or a booking, for a professional that does not exist or is removed. |
 | Weekday | `Weekday` | A day of the week as an ISO number: 1 Monday to 7 Sunday. |
 | Set hours | `setWeeklyHours` | The owner replaces a professional's whole weekly hours at once. |
 | Invalid period | `InvalidWorkingPeriod` | The refusal of a working period whose start or end is not a time from 00:00 to 23:55 in steps of 5 minutes, or whose end is not after its start. |
 | Period too short | `WorkingPeriodTooShort` | The refusal of a working period shorter than `slotMinutes`, which would hold no appointment. |
 | Periods overlap | `WorkingPeriodsOverlap` | The refusal of two working periods of one professional on one weekday that share a minute. |
+| Invalid client name | `InvalidClientName` | The refusal of a client name that is blank or longer than 80 characters. |
+| Invalid phone number | `InvalidPhoneNumber` | The refusal of a phone number with characters other than digits, spaces, `+`, `-`, `.` and brackets, or with fewer than 6 or more than 15 digits. |
+| Remembered appointment | `RememberedAppointment` | The copy of a booked appointment the client's phone keeps in local storage: booking code, phone number, professional's name, start instant, clinic time zone. |
 
 ## Entities
 
@@ -66,16 +69,27 @@ new concept enters here first.
   least `slotMinutes` apart; periods of one professional on one weekday do
   not overlap, and one may end where the next starts.
 * **Appointment:** professional, start instant, client name, client phone,
-  booking code, status. The end is start plus `slotMinutes`.
+  booking code, status. The end is start plus `slotMinutes`. The client
+  name is trimmed, 1 to 80 characters; the client phone is stored as its
+  digits only, 6 to 15 of them.
 
 ## Invariants
 
 1. Two booked appointments of the same professional never overlap.
 2. An appointment starts at a slot: inside one of the professional's working
    periods, on the grid of `slotMinutes` counted from the period's start,
-   ending no later than the period's end.
+   ending no later than the period's end. Slots are cut in clinic wall time,
+   for every clinic date from today's to the date of now plus
+   `bookingWindowDays`. A wall time that does not exist (spring forward)
+   gives no slot; one that happens twice (fall back) is its first instant.
+   A slot is taken when `[start, start + slotMinutes)` overlaps a booked
+   appointment, compared as instants, so an appointment off today's grid
+   still blocks what it touches. An appointment stays when its time later
+   leaves the weekly hours; its time is simply not offered.
 3. A booking starts after the current time and no more than
-   `bookingWindowDays` ahead.
+   `bookingWindowDays` × 24 hours ahead. `book` checks, in order: client
+   name, phone number, window (`OutsideBookingWindow`), hours
+   (`OutsideWorkingHours`), taken (`SlotTaken`).
 4. A cancellation succeeds only while the current time is at or before the
    cancellation deadline; otherwise it is refused with
    `CancellationTooLate`.

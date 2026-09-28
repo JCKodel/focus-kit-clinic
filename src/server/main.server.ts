@@ -1,5 +1,6 @@
 import { serve } from "@hono/node-server";
 import { Hono } from "hono";
+import { appointmentsRoute } from "../features/appointments/route.server.ts";
 import { clinicRoute } from "../features/clinic/route.server.ts";
 import { healthRoute } from "../features/health/route.server.ts";
 import { professionalsRoute } from "../features/professionals/route.server.ts";
@@ -15,7 +16,8 @@ const app = new Hono()
 	.route("/api", clinicRoute(db))
 	.route("/api", signInRoute(db))
 	.route("/api", professionalsRoute(db))
-	.route("/api", weeklyHoursRoute(db));
+	.route("/api", weeklyHoursRoute(db))
+	.route("/api", appointmentsRoute(db));
 
 serve({ fetch: app.fetch, port }, (info) => {
 	console.log(`Server listening on http://localhost:${info.port}`);

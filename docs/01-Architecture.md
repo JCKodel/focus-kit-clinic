@@ -51,8 +51,8 @@ src/
                            migrations, password, session
   lib/                     what two features already share: result.ts,
                            email.ts (trim and lower case the owner email),
-                           name.ts (trim, 1 to 80 characters: clinic and
-                           professional names),
+                           name.ts (trim, 1 to 80 characters: clinic,
+                           professional and client names),
                            request.ts (fetch to Result, for every api.ts),
                            id.ts (the positive whole id in a route path)
 ```
@@ -74,7 +74,9 @@ src/
 
 ## How data is accessed
 
-Only repositories touch SQLite; only `api.ts` files call the server. The
+Only repositories touch SQLite; only `api.ts` files call the server; only
+`appointments/remembered.ts` touches the phone's local storage (key
+`appointments`), where a failure is a `Result` like any other. The
 server exposes the JSON routes listed in docs/02. Migrations are plain SQL
 files in `src/server/migrations/`, applied in order at start and recorded in
 `schema_migration`; docs/02 holds the rules of the runner.

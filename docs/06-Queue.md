@@ -18,7 +18,7 @@ a client can book a free slot, and a client can cancel up to 24 hours before.
 [x] cancel-appointment   a client cancels up to 24 hours before, or is told why not
 ```
 
-## Milestone 2: what the review of milestone 1 found
+## Milestone 1.1: what the review of milestone 1 found
 
 When it closes, every client orchestrator has unit tests, and every
 confirmed finding of the milestone 1 review is settled: setup accepts
@@ -33,9 +33,10 @@ features has one shared copy.
 [ ] routes-table         the Routes table of docs/02 renders whole, with the slots and appointments routes as rows
 [ ] route-errors         one shared databaseFailed and one shared notFound answer; the first copies are in session.server.ts and weeklyHours/route.server.ts
 [ ] minutes-of           one shared "HH:MM" parser; the first copy is in weeklyHours/rules.ts, the second in appointments/rules.ts
+[ ] m1.1-review          the review of milestone 1.1 as docs/05 §8 says: its paragraph clause by clause, then the code; confirmed findings open milestone 1.2
 ```
 
-## Milestone 3: the owner runs the day
+## Milestone 2: the owner runs the day
 
 When it closes, the owner can record a professional's absences, which remove
 their slots, and sees the day's appointments per professional; and the app
@@ -49,4 +50,5 @@ runs outside the developer's machine with no paid service.
 [ ] install              web manifest with the clinic's name and icon, so a phone offers "Add to home screen"
 [ ] fake-bookings        decide (docs/00 open decision) and build how one person is kept from filling the schedule, before the app is public
 [ ] deploy               the app runs on a clinic machine or a free host, with a backup of the data
+[ ] m2-review            the review of milestone 2 as docs/05 §8 says: its paragraph clause by clause, then the code; confirmed findings open milestone 2.1
 ```

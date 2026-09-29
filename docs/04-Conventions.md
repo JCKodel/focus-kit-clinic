@@ -54,6 +54,7 @@ its write waits for the server's lock instead of failing with `SQLITE_BUSY`.
 |---|---|---|
 | Use case | Vitest | Every rule, with the clock passed as a parameter. No database, no network. |
 | Repository | Vitest | Queries against an in memory SQLite with the real migrations. |
+| Orchestrator | Vitest | each event with fake repositories and `now`; no DOM, no module mock |
 | Screen | Playwright | Each scenario of a page's Behaviour that has a screen, plus the screenshots of docs/05. |
 
 Every rule has a test. A rule without a test is not done.

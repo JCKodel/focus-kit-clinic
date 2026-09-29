@@ -1,31 +1,24 @@
 import { useCallback, useEffect, useState } from "react";
-import { fetchSession, signIn, signOut } from "./api.ts";
+import {
+	checkSession,
+	initialOwnerState,
+	type OwnerState,
+	submitSignIn as submitSignInEvent,
+	submitSignInStarted,
+	submitSignOut as submitSignOutEvent,
+	submitSignOutStarted,
+} from "./ownerEvents.ts";
 
-export type OwnerError = "SignInRefused" | "ServerUnreachable";
+export type { OwnerError } from "./ownerEvents.ts";
 
-export type OwnerState =
-	| { kind: "checking" }
-	| { kind: "signedOut"; busy: boolean; error?: OwnerError }
-	| { kind: "signedIn"; email: string; busy: boolean; error?: OwnerError };
-
+// The events live in ownerEvents.ts.
 export function useOwner() {
-	const [state, setState] = useState<OwnerState>({ kind: "checking" });
+	const [state, setState] = useState<OwnerState>(initialOwnerState);
 
 	useEffect(() => {
 		let active = true;
-		fetchSession().then((result) => {
-			if (!active) return;
-			if (result.ok) {
-				setState({ kind: "signedIn", email: result.value, busy: false });
-			} else if (result.error.code === "NotSignedIn") {
-				setState({ kind: "signedOut", busy: false });
-			} else {
-				setState({
-					kind: "signedOut",
-					busy: false,
-					error: "ServerUnreachable",
-				});
-			}
+		checkSession().then((update) => {
+			if (active) setState(update);
 		});
 		return () => {
 			active = false;
@@ -33,23 +26,13 @@ export function useOwner() {
 	}, []);
 
 	const submitSignIn = useCallback(async (email: string, password: string) => {
-		setState({ kind: "signedOut", busy: true });
-		const result = await signIn(email, password);
-		setState(
-			result.ok
-				? { kind: "signedIn", email: result.value, busy: false }
-				: { kind: "signedOut", busy: false, error: result.error.code },
-		);
+		setState(submitSignInStarted());
+		setState(await submitSignInEvent(email, password));
 	}, []);
 
 	const submitSignOut = useCallback(async (email: string) => {
-		setState({ kind: "signedIn", email, busy: true });
-		const result = await signOut();
-		setState(
-			result.ok
-				? { kind: "signedOut", busy: false }
-				: { kind: "signedIn", email, busy: false, error: result.error.code },
-		);
+		setState(submitSignOutStarted(email));
+		setState(await submitSignOutEvent(email));
 	}, []);
 
 	return { state, signIn: submitSignIn, signOut: submitSignOut };

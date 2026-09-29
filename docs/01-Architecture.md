@@ -43,6 +43,9 @@ src/
     repository.server.ts   server Repository: SQL
     repository.server.test.ts
     api.ts                 client Repository: fetch, network failure becomes a Result
+    <name>Events.ts        client Orchestrator: the hook's state, its initial
+                           value, and what each event does, as plain functions
+    <name>Events.test.ts
     use<Feature>.ts        client Orchestrator: a React hook publishing one state
     <Feature>View.tsx      View
     strings.ts             every text the user reads in this feature
@@ -63,6 +66,18 @@ src/
   (`clinicRoute(db)`), so Vitest drives them through Hono's `app.request`
   against an in-memory SQLite (`testDatabase.server.ts`).
 
+* A client orchestrator is split in two. `<name>Events.ts` holds every
+  event as a plain function: one with no call is `(state, ...inputs) =>
+  State`; one with a call has `<event>Started(state, ...inputs)` for the
+  in-flight state, and `<event>(...inputs, now?, repositories)` resolving
+  to an update `(current) => State`, so what was typed meanwhile survives.
+  Its event functions receive their repositories as a parameter, the real
+  ones by default (`<name>Repositories`), and the clock as `now`: no
+  function there reads it. `use<Feature>.ts` keeps only the React part:
+  it holds the state, publishes the in-flight state and the update, and
+  keeps what holds state across renders (stale-answer guards,
+  subscriptions such as `onRememberedChange`). A hook imports no `api.ts`,
+  `rules.ts` or `remembered.ts`, except `onRememberedChange`.
 * A slice has only the files it needs. A file appears when it pays its way.
 * Client code never imports a `*.server.ts` file.
 * The server enforces every rule. The client imports the same use case only

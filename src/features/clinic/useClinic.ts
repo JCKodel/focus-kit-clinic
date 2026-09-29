@@ -1,23 +1,14 @@
 import { useEffect, useState } from "react";
-import { fetchClinicName } from "./api.ts";
+import { type ClinicState, initialClinicState, load } from "./clinicEvents.ts";
 
-export type ClinicState =
-	| { kind: "loading" }
-	| { kind: "ready"; name: string }
-	| { kind: "notSetUp" }
-	| { kind: "unreachable" };
-
+// The events live in clinicEvents.ts.
 export function useClinic(): ClinicState {
-	const [state, setState] = useState<ClinicState>({ kind: "loading" });
+	const [state, setState] = useState<ClinicState>(initialClinicState);
 
 	useEffect(() => {
 		let active = true;
-		fetchClinicName().then((result) => {
-			if (!active) return;
-			if (result.ok) setState({ kind: "ready", name: result.value });
-			else if (result.error.code === "ClinicNotSetUp") {
-				setState({ kind: "notSetUp" });
-			} else setState({ kind: "unreachable" });
+		load().then((update) => {
+			if (active) setState(update);
 		});
 		return () => {
 			active = false;

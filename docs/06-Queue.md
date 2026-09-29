@@ -20,12 +20,14 @@ a client can book a free slot, and a client can cancel up to 24 hours before.
 
 ## Milestone 2: what the review of milestone 1 found
 
-When it closes, every confirmed finding of the milestone 1 review is
-settled: setup accepts every IANA time zone name, a refused booking keeps
-its message through a failed reload, docs/02 renders whole, and the code
-repeated across features has one shared copy.
+When it closes, every client orchestrator has unit tests, and every
+confirmed finding of the milestone 1 review is settled: setup accepts
+every IANA time zone name, a refused booking keeps its message through a
+failed reload, docs/02 renders whole, and the code repeated across
+features has one shared copy.
 
 ```
+[x] orchestrator-tests   every use<Feature>.ts hook's events move to plain functions with repositories as a parameter, tested in Node
 [ ] time-zone-names      setup accepts every IANA name the runtime knows, such as US/Eastern and Etc/UTC, as docs/03 says
 [ ] slot-taken-retry     after a refused booking whose slot reload fails, "Try again" keeps the "no longer free" message and the chosen date
 [ ] routes-table         the Routes table of docs/02 renders whole, with the slots and appointments routes as rows

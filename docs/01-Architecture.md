@@ -70,18 +70,8 @@ src/
   against an in-memory SQLite (`testDatabase.server.ts`).
 
 * A client orchestrator is split in two. `<name>Events.ts` holds every
-  event as a plain function: one with no call is `(state, ...inputs) =>
-  State`; one with a call has `<event>Started(state, ...inputs)` for the
-  in-flight state, and `<event>(...inputs, now?, repositories)` resolving
-  to an update `(current) => State`, so what was typed meanwhile survives.
-  The in-flight state is published the same way, as an update of the
-  current state. A starter that decides whether to send answers
-  `{ update, send }`: it checks the state the person acted on, `send` says
-  at once whether to call, `update` writes the answer of the check onto
-  the current state, and the call sends the state that was checked.
-  `submitStarted` (appointments) is the first occurrence and `saveStarted`
-  (weeklyHours) the second; the shape is declared once, as `Started` in
-  `src/lib/update.ts`.
+  event as a plain function, in one of the shapes of "Event shapes"
+  below.
   The event functions receive their repositories as a parameter, the real
   ones by default (`<name>Repositories`), and the clock as `now`: no
   function there reads it. `use<Feature>.ts` keeps only the React part:
@@ -97,6 +87,86 @@ src/
 * Use cases take the current time as a parameter. No use case reads the
   clock.
 * Code moves to `lib/` on its second concrete use, not before.
+
+### Event shapes
+
+Every exported function of a `<name>Events.ts` file is an event of one
+shape below, or a value worked out for the view, which is not an event:
+`daysOf`, `tooLateToCancel` and `linesOf`. `S` is the hook's state. The
+repositories come last, the real ones by default; `now` is there only
+when a use case or a repository needs the clock. The eight events files
+were written together by `orchestrator-tests`, in the order `booking`,
+`cancel`, `remembered`, `professionals`, `weeklyHours`, `owner`,
+`clinic`, `health`; that order decides which is the first occurrence. A
+new event takes one of these shapes; a delivery that needs another adds
+it here, with its first occurrence.
+
+1. **Event with no call.** `(state: S, ...inputs) => S`. Used when the
+   event only changes what is on screen: typing, picking, opening,
+   closing. The hook publishes it as an update,
+   `setState((s) => event(s, ...inputs))`. First occurrence: `pickDay` in
+   `bookingEvents.ts`. When the answer does not depend on the state, the
+   event takes none, `(...inputs) => S`, and the hook publishes the
+   value: first occurrence `open` and `close` in `cancelEvents.ts`.
+2. **Call with a Started and an update.**
+   `<event>Started(state: S, ...inputs): S` gives the in-flight state, and
+   `async <event>(...inputs, now?, repositories): Promise<Update<S>>`
+   makes the call and resolves to an update, so what was typed meanwhile
+   survives. Used when an action calls a repository and nothing is
+   checked before sending. The hook publishes the in-flight state as an
+   update, then the answer. First occurrence: `submitStarted` and
+   `submit` in `cancelEvents.ts`. When the in-flight state does not
+   depend on the state, the starter takes none and the hook publishes the
+   value: `submitSignInStarted` and `submitSignOutStarted` in
+   `ownerEvents.ts`.
+3. **Load at mount.** `async <event>(repositories): Promise<Update<S>>`,
+   with no Started. Used for the first read of a screen: the in-flight
+   state is the initial state, `initial<Name>State`, so nothing is
+   published before the call. The hook runs it in a `useEffect` and drops
+   the answer when its `active` flag says the screen is gone. First
+   occurrence: `load` in `professionalsEvents.ts`. The booking's first
+   load is shape 5, and the weekly hours' is shape 6.
+4. **Starter that decides whether to send.**
+   `<event>Started(state: S): Started<S>`, followed by the call. Used when
+   a rule is checked on the client before sending, to show its message
+   beside the field. It checks the state the person acted on, `send` says
+   at once whether to call, `update` writes the answer of the check onto
+   the current state, and the call sends the state that was checked.
+   First occurrence: `submitStarted` in `bookingEvents.ts`; the second is
+   `saveStarted` in `weeklyHoursEvents.ts`, so the shape is declared
+   once, as `Started` in `src/lib/update.ts`.
+5. **Answer that may be the next event.**
+   `async <event>(...inputs, now?, repositories): Promise<BookingOutcome>`,
+   where `BookingOutcome` is `{ update: Update<BookingState> }` or a
+   `BookingNext`, which names a call and its inputs: `loadProfessionals`,
+   `loadSlots` or `submit`. Used when a refusal must show a step loading
+   again (after `SlotTaken` or `ProfessionalNotFound`), which one update
+   cannot publish. The hook runs a `BookingNext` as any event: its
+   Started, then the call under a new `latest` number, then the update or
+   the next event. `retryOf(state): BookingNext | undefined` names the
+   call "Try again" repeats. Only occurrence: `bookingEvents.ts`.
+6. **Answer that carries a report.**
+   `async <event>(...inputs, repositories): Promise<WeeklyHoursAnswer>`,
+   where `WeeklyHoursAnswer` is
+   `{ update: Update<WeeklyHoursState>; report?: WeeklyHoursReport }`.
+   Used when an editor inside another section tells that section what
+   happened, because the section holds the busy state, the open row and
+   the messages. The hook publishes the update, then passes the report to
+   the section; before a save it sends, it reports `saving` itself. Only
+   occurrence: `load` and `save` in `weeklyHoursEvents.ts`.
+7. **Report received.**
+   `<event>(report, repositories): Update<S> | Promise<Update<S>>`. Used
+   by the section that receives shape 6's report: the answer is an update
+   at once, so a button disables in the same render, or a promise when
+   the report needs a call. The hook publishes a function at once and a
+   promise when it resolves. Only occurrence: `hoursReported` in
+   `professionalsEvents.ts`.
+8. **Call that does not wait.** `(state, now, repositories) => S`, or
+   `(now, repositories) => S` for the first state. Used when the
+   repository is local storage, which answers at once, so there is no
+   in-flight state. The hook gives `initialRememberedState` to `useState`
+   and publishes `reread` as an update on each `onRememberedChange`. Only
+   occurrence: `rememberedEvents.ts`.
 
 ## How data is accessed
 

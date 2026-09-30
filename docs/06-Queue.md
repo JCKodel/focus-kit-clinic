@@ -24,7 +24,8 @@ When it closes, every client orchestrator has unit tests, and every
 confirmed finding of the milestone 1 review is settled: setup accepts
 every IANA time zone name, a refused booking keeps its message through a
 failed reload, docs/02 renders whole, and the code repeated across
-features has one shared copy.
+features has one shared copy, and useBooking's submit publishes its
+in-flight state as an update of the current state, as docs/01 says.
 
 ```
 [x] orchestrator-tests   every use<Feature>.ts hook's events move to plain functions with repositories as a parameter, tested in Node
@@ -33,6 +34,7 @@ features has one shared copy.
 [ ] routes-table         the Routes table of docs/02 renders whole, with the slots and appointments routes as rows
 [ ] route-errors         one shared databaseFailed and one shared notFound answer; the first copies are in session.server.ts and weeklyHours/route.server.ts
 [ ] minutes-of           one shared "HH:MM" parser; the first copy is in weeklyHours/rules.ts, the second in appointments/rules.ts
+[x] booking-submit       useBooking's submit publishes its in-flight state as an update and books with the state the hook read, not a ref written during render
 [ ] m1.1-review          the review of milestone 1.1 as docs/05 §8 says: its paragraph clause by clause, then the code; confirmed findings open milestone 1.2
 ```
 

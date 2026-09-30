@@ -84,7 +84,8 @@ export type BookingNext =
 			professional: Professional;
 			after?: { message: StepMessage; date: string };
 	  }
-	| { next: "submit" };
+	// the state the booking is made from
+	| { next: "submit"; state: BookingState };
 
 export type BookingOutcome =
 	| { update: (current: BookingState) => BookingState }
@@ -251,24 +252,37 @@ export function done(state: BookingState): BookingState {
 }
 
 // Name and phone are checked here to show the message beside the field
-// and send nothing; the server checks them again.
+// and send nothing; the server checks them again. The check reads `state`,
+// the one the person acted on; `update` puts its answer on the current
+// state, so what was typed meanwhile survives.
 export function submitStarted(state: BookingState): {
-	state: BookingState;
+	update: (current: BookingState) => BookingState;
 	send: boolean;
 } {
-	if (state.step.kind !== "form" || !state.slots) return { state, send: false };
+	if (state.step.kind !== "form" || !state.slots) {
+		return { update: (current) => current, send: false };
+	}
 	const name = checkClientName(state.name);
 	const phone = checkClientPhone(state.phone);
-	const checked = {
-		...state,
+	const errors = {
 		nameError: name.ok ? undefined : name.error,
 		phoneError: phone.ok ? undefined : phone.error,
 	};
-	if (!name.ok || !phone.ok) return { state: checked, send: false };
-	return { state: { ...checked, busy: true, failed: undefined }, send: true };
+	if (!name.ok || !phone.ok) {
+		return { update: (current) => ({ ...current, ...errors }), send: false };
+	}
+	return {
+		update: (current) => ({
+			...current,
+			...errors,
+			busy: true,
+			failed: undefined,
+		}),
+		send: true,
+	};
 }
 
-// `state` is the one `submitStarted` accepted.
+// `state` is the one given to `submitStarted`, the one the person acted on.
 export async function submit(
 	state: BookingState,
 	now: Date,
@@ -327,6 +341,6 @@ export function retryOf(state: BookingState): BookingNext | undefined {
 	if (failed === "slots" && step.kind === "days") {
 		return { next: "loadSlots", professional: step.professional };
 	}
-	if (failed === "book") return { next: "submit" };
+	if (failed === "book") return { next: "submit", state };
 	return undefined;
 }

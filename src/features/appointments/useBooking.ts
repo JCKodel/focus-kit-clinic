@@ -31,20 +31,16 @@ export function useBooking() {
 	// Only the answer to the latest request is shown; Back or another tap
 	// makes earlier ones stale.
 	const latest = useRef(0);
-	// The state last shown: what a booking sends.
-	const shown = useRef(state);
-	shown.current = state;
 
 	// Any event with a call: its in-flight state, then its answer, which is
 	// an update or the next event to run.
 	const run = useCallback(async function run(next: BookingNext) {
 		let outcome: Promise<BookingOutcome>;
 		if (next.next === "submit") {
-			const snapshot = shown.current;
-			const started = submitStarted(snapshot);
-			setState(started.state);
+			const started = submitStarted(next.state);
+			setState(started.update);
 			if (!started.send) return;
-			outcome = submitEvent(snapshot, new Date());
+			outcome = submitEvent(next.state, new Date());
 		} else if (next.next === "loadSlots") {
 			setState((s) => loadSlotsStarted(s, next.professional));
 			outcome = loadSlots(next.professional, next.after);
@@ -91,7 +87,10 @@ export function useBooking() {
 		setState((s) => typePhoneEvent(s, phone));
 	}, []);
 
-	const submit = useCallback(() => run({ next: "submit" }), [run]);
+	const submit = useCallback(
+		() => run({ next: "submit", state }),
+		[state, run],
+	);
 
 	const retry = useCallback(() => {
 		const next = retryOf(state);

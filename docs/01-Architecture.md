@@ -71,7 +71,14 @@ src/
   State`; one with a call has `<event>Started(state, ...inputs)` for the
   in-flight state, and `<event>(...inputs, now?, repositories)` resolving
   to an update `(current) => State`, so what was typed meanwhile survives.
-  Its event functions receive their repositories as a parameter, the real
+  The in-flight state is published the same way, as an update of the
+  current state. A starter that decides whether to send answers
+  `{ update, send }`: it checks the state the person acted on, `send` says
+  at once whether to call, `update` writes the answer of the check onto
+  the current state, and the call sends the state that was checked.
+  `submitStarted` (appointments) is the first occurrence; `saveStarted`
+  (weeklyHours) still returns a whole state, until its own delivery.
+  The event functions receive their repositories as a parameter, the real
   ones by default (`<name>Repositories`), and the clock as `now`: no
   function there reads it. `use<Feature>.ts` keeps only the React part:
   it holds the state, publishes the in-flight state and the update, and

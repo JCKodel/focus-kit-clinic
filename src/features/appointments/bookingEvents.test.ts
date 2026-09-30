@@ -271,15 +271,22 @@ describe("moving between the steps", () => {
 });
 
 describe("booking", () => {
-	it("sends nothing when the name or phone is refused", () => {
-		const { state, send } = submitStarted({
-			...onForm,
-			name: " ",
-			phone: "12",
+	it("sends the checked form and keeps a name typed after the click", () => {
+		const { update, send } = submitStarted(onForm);
+		expect(send).toBe(true);
+
+		expect(update({ ...onForm, name: "Rita Sousa Lima" })).toMatchObject({
+			name: "Rita Sousa Lima",
+			busy: true,
 		});
+	});
+
+	it("sends nothing when the name or phone is refused", () => {
+		const refused = { ...onForm, name: " ", phone: "12" };
+		const { update, send } = submitStarted(refused);
 
 		expect(send).toBe(false);
-		expect(state).toMatchObject({
+		expect(update(refused)).toMatchObject({
 			nameError: "InvalidClientName",
 			phoneError: "InvalidPhoneNumber",
 			busy: false,
@@ -287,18 +294,22 @@ describe("booking", () => {
 	});
 
 	it("sends nothing away from the form", () => {
-		expect(submitStarted(onDays)).toEqual({ state: onDays, send: false });
+		const { update, send } = submitStarted(onDays);
+
+		expect(send).toBe(false);
+		expect(update(onDays)).toBe(onDays);
 	});
 
 	it("remembers the booked appointment and shows it with the fields emptied", async () => {
-		const { state: started, send } = submitStarted(onForm);
+		const { update, send } = submitStarted(onForm);
 		expect(send).toBe(true);
+		const started = update(onForm);
 		expect(started.busy).toBe(true);
 		const postAppointment = vi.fn(async () => ok(booked));
 		const remember = vi.fn(() => ok(undefined));
 
 		const outcome = await submit(
-			started,
+			onForm,
 			now,
 			fake({ postAppointment, remember }),
 		);
@@ -360,9 +371,9 @@ describe("booking", () => {
 	});
 
 	it("fails with `book` when the server is unreachable", async () => {
-		const { state: started } = submitStarted(onForm);
+		const started = submitStarted(onForm).update(onForm);
 		const outcome = await submit(
-			started,
+			onForm,
 			now,
 			fake({ postAppointment: async () => unreachable }),
 		);
@@ -374,9 +385,9 @@ describe("booking", () => {
 	});
 
 	it("keeps a name typed in flight through a taken slot", async () => {
-		const { state: started } = submitStarted(onForm);
+		const started = submitStarted(onForm).update(onForm);
 		const taken = await submit(
-			started,
+			onForm,
 			now,
 			fake({
 				postAppointment: async () => err({ code: "SlotTaken" } as const),
@@ -414,7 +425,9 @@ describe("retryOf", () => {
 	});
 
 	it("repeats the booking", () => {
-		expect(retryOf({ ...onForm, failed: "book" })).toEqual({ next: "submit" });
+		const failed: BookingState = { ...onForm, failed: "book" };
+
+		expect(retryOf(failed)).toEqual({ next: "submit", state: failed });
 	});
 
 	// Today's behaviour: slot-taken-retry will keep the message and the date.

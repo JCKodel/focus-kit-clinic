@@ -4,7 +4,6 @@ import {
 	initialWeeklyHoursState,
 	load,
 	removePeriod as removePeriodEvent,
-	type SectionRefusal,
 	save as saveEvent,
 	saveStarted,
 	typeTime as typeTimeEvent,
@@ -15,24 +14,13 @@ import {
 
 export type { DraftPeriod } from "./weeklyHoursEvents.ts";
 
-// What the editor reports to the professionals section, which holds the busy
-// state, the open row and the messages above the list.
 export type HoursSection = {
-	saving: () => void;
-	saved: () => void;
-	failed: () => void;
-	refused: (code: SectionRefusal) => void;
+	report: (report: WeeklyHoursReport) => void;
 	close: () => void;
 };
 
-function forward(section: HoursSection, report?: WeeklyHoursReport) {
-	if (report === "saved") section.saved();
-	else if (report === "failed") section.failed();
-	else if (report) section.refused(report);
-}
-
 // The events live in weeklyHoursEvents.ts; the hook holds the state and
-// forwards each report to the section.
+// passes each report to the section.
 export function useWeeklyHours(professionalId: number, section: HoursSection) {
 	const [state, setState] = useState<WeeklyHoursState>(initialWeeklyHoursState);
 	const sectionRef = useRef(section);
@@ -43,7 +31,7 @@ export function useWeeklyHours(professionalId: number, section: HoursSection) {
 		load(professionalId).then(({ update, report }) => {
 			if (!active) return;
 			setState(update);
-			forward(sectionRef.current, report);
+			if (report) sectionRef.current.report(report);
 		});
 		return () => {
 			active = false;
@@ -69,10 +57,10 @@ export function useWeeklyHours(professionalId: number, section: HoursSection) {
 		const started = saveStarted(state);
 		setState(started.update);
 		if (!started.send) return;
-		sectionRef.current.saving();
+		sectionRef.current.report("saving");
 		const { update, report } = await saveEvent(professionalId, state.periods);
 		setState(update);
-		forward(sectionRef.current, report);
+		if (report) sectionRef.current.report(report);
 	}, [state, professionalId]);
 
 	return { state, addPeriod, typeTime, removePeriod, save };

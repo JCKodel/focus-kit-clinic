@@ -4,10 +4,7 @@ import {
 	add as addEvent,
 	addStarted,
 	close as closeEvent,
-	hoursFailed,
-	hoursRefused,
-	hoursSaved,
-	hoursSaving,
+	hoursReported,
 	initialProfessionalsState,
 	load,
 	openHours as openHoursEvent,
@@ -85,11 +82,10 @@ export function useProfessionals() {
 
 	const hours: HoursSection = useMemo(
 		() => ({
-			saving: () => setState(hoursSaving),
-			saved: () => setState(hoursSaved),
-			failed: () => setState(hoursFailed),
-			refused: (code) => {
-				hoursRefused(code).then(setState);
+			report: (report) => {
+				const answer = hoursReported(report);
+				if (typeof answer === "function") setState(answer);
+				else answer.then(setState);
 			},
 			close,
 		}),

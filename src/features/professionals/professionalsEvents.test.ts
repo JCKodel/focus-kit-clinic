@@ -4,10 +4,7 @@ import {
 	add,
 	addStarted,
 	close,
-	hoursFailed,
-	hoursRefused,
-	hoursSaved,
-	hoursSaving,
+	hoursReported,
 	initialProfessionalsState,
 	load,
 	openHours,
@@ -37,6 +34,12 @@ function fake(
 		deleteProfessional: unexpected,
 		...repositories,
 	};
+}
+
+// A report that needs no repository answers an update at once, not a promise.
+function atOnce(answer: ReturnType<typeof hoursReported>) {
+	if (typeof answer !== "function") throw new Error("answered a promise");
+	return answer;
 }
 
 const unreachable = err({ code: "ServerUnreachable" } as const);
@@ -235,12 +238,17 @@ describe("a professional removed meanwhile", () => {
 	});
 
 	it("reported by the hours editor, reloads the list and says so", async () => {
-		const update = await hoursRefused(
+		const saving = atOnce(hoursReported("saving", fake({})))(
+			openHours(listed, rui),
+		);
+		const answer = hoursReported(
 			"ProfessionalNotFound",
 			fake({ fetchProfessionals: async () => ok([ana]) }),
 		);
+		expect(answer).toBeInstanceOf(Promise);
+		const update = await answer;
 
-		expect(update(hoursSaving(openHours(listed, rui)))).toMatchObject({
+		expect(update(saving)).toMatchObject({
 			...reloaded,
 			error: "ProfessionalNotFound",
 		});
@@ -272,20 +280,31 @@ describe("the hours editor's reports", () => {
 		});
 	});
 
-	it("saving is busy, saved closes the row, failed keeps it", () => {
-		const saving = hoursSaving(opened);
-		expect(saving.busy).toBe(true);
-		expect(hoursSaved(saving)).toMatchObject({ busy: false, row: undefined });
-		expect(hoursFailed(saving)).toMatchObject({
+	const saving = atOnce(hoursReported("saving", fake({})))(opened);
+
+	it("saving is busy, at once", () => {
+		expect(saving).toMatchObject({ busy: true });
+	});
+
+	it("saved closes the row, at once", () => {
+		const update = atOnce(hoursReported("saved", fake({})));
+
+		expect(update(saving)).toMatchObject({ busy: false, row: undefined });
+	});
+
+	it("failed keeps the row open, at once", () => {
+		const update = atOnce(hoursReported("failed", fake({})));
+
+		expect(update(saving)).toMatchObject({
 			busy: false,
 			row: { id: 3, mode: "hours" },
 		});
 	});
 
-	it("refused shows the code above the list", async () => {
-		const update = await hoursRefused("NotSignedIn", fake({}));
+	it("NotSignedIn shows the code above the list, at once", () => {
+		const update = atOnce(hoursReported("NotSignedIn", fake({})));
 
-		expect(update(hoursSaving(opened))).toMatchObject({
+		expect(update(saving)).toMatchObject({
 			busy: false,
 			error: "NotSignedIn",
 			row: { id: 3, mode: "hours" },

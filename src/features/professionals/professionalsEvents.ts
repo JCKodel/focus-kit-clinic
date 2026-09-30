@@ -1,4 +1,4 @@
-import type { SectionRefusal } from "../weeklyHours/api.ts";
+import type { WeeklyHoursReport } from "../weeklyHours/weeklyHoursEvents.ts";
 import {
 	deleteProfessional,
 	fetchProfessionals,
@@ -217,25 +217,16 @@ export function openHours(
 	};
 }
 
-// The hours editor fetches and saves on its own, and reports here: the
-// section keeps the busy state, the open row and the messages above the
-// list.
-export function hoursSaving(state: ProfessionalsState): ProfessionalsState {
-	return started(state);
-}
-
-export function hoursSaved(state: ProfessionalsState): ProfessionalsState {
-	return { ...state, busy: false, row: undefined };
-}
-
-export function hoursFailed(state: ProfessionalsState): ProfessionalsState {
-	return { ...state, busy: false };
-}
-
-export async function hoursRefused(
-	code: SectionRefusal,
+// The hours editor fetches and saves on its own, and reports here. The
+// answer is an update at once, so Save disables in the same render, except
+// for a removed professional, which waits for the list's reload.
+export function hoursReported(
+	report: WeeklyHoursReport,
 	repositories = professionalsRepositories,
-): Promise<Update> {
-	if (code === "ProfessionalNotFound") return reloadGone(repositories);
-	return (s) => ({ ...s, busy: false, error: code });
+): Update | Promise<Update> {
+	if (report === "saving") return started;
+	if (report === "saved") return (s) => ({ ...s, busy: false, row: undefined });
+	if (report === "failed") return (s) => ({ ...s, busy: false });
+	if (report === "ProfessionalNotFound") return reloadGone(repositories);
+	return (s) => ({ ...s, busy: false, error: report });
 }

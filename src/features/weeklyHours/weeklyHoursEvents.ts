@@ -10,7 +10,7 @@ import {
 	type WorkingPeriod,
 } from "./rules.ts";
 
-export type { SectionRefusal, Weekday };
+export type { Weekday };
 
 // A period as typed, with a key that outlives edits and removals.
 export type DraftPeriod = WorkingPeriod & { key: number };
@@ -36,7 +36,7 @@ export const initialWeeklyHoursState: WeeklyHoursState = {
 
 // What the editor reports to the professionals section, which holds the busy
 // state, the open row and the messages above the list.
-export type WeeklyHoursReport = "saved" | "failed" | SectionRefusal;
+export type WeeklyHoursReport = "saving" | "saved" | "failed" | SectionRefusal;
 
 export type WeeklyHoursAnswer = {
 	update: (current: WeeklyHoursState) => WeeklyHoursState;

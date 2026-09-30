@@ -26,7 +26,8 @@ every IANA time zone name, a refused booking keeps its message through a
 failed reload, docs/02 renders whole, and the code repeated across
 features has one shared copy, and useBooking's submit and useWeeklyHours'
 save publish their in-flight state as an update of the current state, as
-docs/01 says.
+docs/01 says, and the weekly hours editor reports to the professionals
+section through one path tested in Node.
 
 ```
 [x] orchestrator-tests   every use<Feature>.ts hook's events move to plain functions with repositories as a parameter, tested in Node
@@ -37,6 +38,7 @@ docs/01 says.
 [ ] minutes-of           one shared "HH:MM" parser; the first copy is in weeklyHours/rules.ts, the second in appointments/rules.ts
 [x] booking-submit       useBooking's submit publishes its in-flight state as an update and books with the state the hook read, not a ref written during render
 [x] hours-save           useWeeklyHours' save publishes its in-flight state as an update, so a time typed just before Save survives
+[x] hours-report         the hours editor's reports reach the professionals section as one WeeklyHoursReport and one tested event; finishes what orchestrator-tests left
 [ ] m1.1-review          the review of milestone 1.1 as docs/05 §8 says: its paragraph clause by clause, then the code; confirmed findings open milestone 1.2
 ```
 

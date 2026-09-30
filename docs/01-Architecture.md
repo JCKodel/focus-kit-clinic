@@ -59,6 +59,8 @@ src/
                            professional and client names),
                            request.ts (fetch to Result, for every api.ts),
                            id.ts (the positive whole id in a route path),
+                           time.ts (minutesOf: a clinic wall time "HH:MM"
+                           as minutes since midnight),
                            update.ts (Update and Started: the answer of an
                            event and of a starter that decides whether to
                            send)

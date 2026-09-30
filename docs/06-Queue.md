@@ -41,7 +41,7 @@ git-worktrees is built in its own worktree and merged into main with
 [ ] slot-taken-retry     after a refused booking whose slot reload fails, "Try again" keeps the "no longer free" message and the chosen date
 [ ] routes-table         the Routes table of docs/02 renders whole, with the slots and appointments routes as rows
 [x] route-errors         one shared copy of each error answer routes repeat (DatabaseFailed, BadRequest, NotSignedIn, ProfessionalNotFound, ClinicNotSetUp 500); the first copies are in session.server.ts and weeklyHours/route.server.ts
-[ ] minutes-of           one shared "HH:MM" parser; the first copy is in weeklyHours/rules.ts, the second in appointments/rules.ts
+[x] minutes-of           one shared "HH:MM" parser; the first copy is in weeklyHours/rules.ts, the second in appointments/rules.ts
 [x] booking-submit       useBooking's submit publishes its in-flight state as an update and books with the state the hook read, not a ref written during render
 [x] hours-save           useWeeklyHours' save publishes its in-flight state as an update, so a time typed just before Save survives
 [x] hours-report         the hours editor's reports reach the professionals section as one WeeklyHoursReport and one tested event; finishes what orchestrator-tests left

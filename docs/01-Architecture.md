@@ -148,12 +148,15 @@ it here, with its first occurrence.
 6. **Answer that carries a report.**
    `async <event>(...inputs, repositories): Promise<WeeklyHoursAnswer>`,
    where `WeeklyHoursAnswer` is
-   `{ update: Update<WeeklyHoursState>; report?: WeeklyHoursReport }`.
+   `{ update: Update<WeeklyHoursState>; report?: WeeklyHoursAnswerReport }`.
    Used when an editor inside another section tells that section what
    happened, because the section holds the busy state, the open row and
    the messages. The hook publishes the update, then passes the report to
-   the section; before a save it sends, it reports `saving` itself. Only
-   occurrence: `load` and `save` in `weeklyHoursEvents.ts`.
+   the section; before a save it sends, it reports `saving` itself. The
+   section takes a `WeeklyHoursReport`, which is a
+   `WeeklyHoursAnswerReport` or `saving`; an answer cannot carry `saving`,
+   which would leave the section busy. Only occurrence: `load` and `save`
+   in `weeklyHoursEvents.ts`.
 7. **Report received.**
    `<event>(report, repositories): Update<S> | Promise<Update<S>>`. Used
    by the section that receives shape 6's report: the answer is an update

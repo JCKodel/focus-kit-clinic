@@ -35,13 +35,17 @@ export const initialWeeklyHoursState: WeeklyHoursState = {
 	nextKey: 0,
 };
 
+// What a load or a save answers. "saving" is not one: only the hook
+// reports it, before a save it sends.
+export type WeeklyHoursAnswerReport = "saved" | "failed" | SectionRefusal;
+
 // What the editor reports to the professionals section, which holds the busy
 // state, the open row and the messages above the list.
-export type WeeklyHoursReport = "saving" | "saved" | "failed" | SectionRefusal;
+export type WeeklyHoursReport = "saving" | WeeklyHoursAnswerReport;
 
 export type WeeklyHoursAnswer = {
 	update: Update<WeeklyHoursState>;
-	report?: WeeklyHoursReport;
+	report?: WeeklyHoursAnswerReport;
 };
 
 export type WeeklyHoursRepositories = {

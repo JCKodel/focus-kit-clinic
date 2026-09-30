@@ -29,7 +29,8 @@ save publish their in-flight state as an update of the current state, as
 docs/01 says, and the weekly hours editor reports to the professionals
 section through one path tested in Node, and the weekly hours editor's
 From and To and the booking form's name and phone are disabled while a
-save or a booking is in flight.
+save or a booking is in flight, and the weekly hours answer's report type
+leaves out "saving", which only the hook reports.
 
 ```
 [x] orchestrator-tests   every use<Feature>.ts hook's events move to plain functions with repositories as a parameter, tested in Node
@@ -44,6 +45,7 @@ save or a booking is in flight.
 [x] update-type          one shared Update and Started type in lib/update.ts, settling the one shared copy clause; the first copies are in bookingEvents.ts and submitStarted
 [x] event-shapes         docs/01 names every event shape the code uses, when each is used and its first occurrence
 [x] busy-fields          the hours editor's From and To and the booking form's name and phone are disabled while a save or a booking is in flight
+[x] hours-answer         WeeklyHoursAnswer's report type leaves out "saving", which only useWeeklyHours reports before a save it sends
 [ ] m1.1-review          the review of milestone 1.1 as docs/05 §8 says: its paragraph clause by clause, then the code; confirmed findings open milestone 1.2
 ```
 

@@ -13,7 +13,8 @@ decided yet.
 
 docs/06 → /propose <slug> → work/<slug>.md → /apply <slug>, in a fresh
 session → verify green, environments as §5 says → work/done/<slug>.md and
-git add → a person reviews and commits.
+git add, in the delivery's worktree → a person reviews, commits on the
+branch and merges it into main with `--no-ff`.
 
 /propose talks and writes the page, never code. /apply builds, proves,
 updates the documents, stages and suggests the commit, never commits.
@@ -62,7 +63,9 @@ conversation in any session.
     file. Command: `npm run dev` (client and server together; migrations
     apply at start). A delivery leaves the code ready to start and names the
     command; the person starts it, since the agent may run headless and
-    cannot keep a process running.
+    cannot keep a process running. A new worktree has an empty `data/`, so
+    seeing the app in it with `npm run dev` first needs `npm run setup`.
+    Verify does not need it, because the e2e run sets up its own database.
   * production: a machine at the clinic or a free host; created by the
     `deploy` delivery, which writes its line here.
 * **Proof of a screen:** Playwright screenshots. Client screens at phone
@@ -71,12 +74,25 @@ conversation in any session.
   States, with plain, clean default styling.
 * **Publish policy:** the agent never updates an environment beyond local.
   The person publishes.
-* **Git:** trunk. The agent stages; it never commits or merges.
+* **Git:** a worktree per delivery (ADR-0003). `/propose <slug>` creates
+  the worktree with
+  `git worktree add ../focus-kit-clinic-<slug> -b <slug> main` from the
+  main folder, and writes the page and the docs/06 mark there. `/apply <slug>` runs in a fresh session opened in that folder. If
+  `node_modules` is missing, it runs `npm ci` first.
+  * The person commits the delivery on its branch, in one or more commits,
+    then from the main folder runs `git merge --no-ff <slug>` into `main`:
+    one merge per delivery. The person resolves any conflict, then runs
+    `git worktree remove ../focus-kit-clinic-<slug>` and
+    `git branch -d <slug>`.
+  * The agent stages. It never commits, merges, resolves a merge conflict
+    or removes a worktree.
 
 ## 6. Commit
 
 The agent stages and suggests the message; the person commits after
-reviewing. Imperative subject up to 72 characters, scope in parentheses
+reviewing. The suggested message is for the delivery's commit on its
+branch; the merge commit keeps git's default message,
+`Merge branch '<slug>'`. Imperative subject up to 72 characters, scope in parentheses
 when it helps; body up to five one-line bullets, the highlights and not
 the reasoning; last line points to `work/done/<slug>.md`, where the
 reasoning lives.

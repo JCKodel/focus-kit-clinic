@@ -30,10 +30,13 @@ docs/01 says, and the weekly hours editor reports to the professionals
 section through one path tested in Node, and the weekly hours editor's
 From and To and the booking form's name and phone are disabled while a
 save or a booking is in flight, and the weekly hours answer's report type
-leaves out "saving", which only the hook reports.
+leaves out "saving", which only the hook reports, and every delivery after
+git-worktrees is built in its own worktree and merged into main with
+--no-ff.
 
 ```
 [x] orchestrator-tests   every use<Feature>.ts hook's events move to plain functions with repositories as a parameter, tested in Node
+[x] git-worktrees        the git strategy becomes a worktree per delivery, ../focus-kit-clinic-<slug> on branch <slug>, merged by the person with --no-ff
 [ ] time-zone-names      setup accepts every IANA name the runtime knows, such as US/Eastern and Etc/UTC, as docs/03 says
 [ ] slot-taken-retry     after a refused booking whose slot reload fails, "Try again" keeps the "no longer free" message and the chosen date
 [ ] routes-table         the Routes table of docs/02 renders whole, with the slots and appointments routes as rows

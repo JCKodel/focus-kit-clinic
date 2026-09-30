@@ -1,6 +1,7 @@
 import type { DatabaseSync } from "node:sqlite";
 import { type Context, Hono } from "hono";
 import { idOf } from "../../lib/id.ts";
+import { badRequest, databaseFailed } from "../../server/answers.server.ts";
 import { requireSession } from "../../server/session.server.ts";
 import {
 	findActiveProfessionals,
@@ -34,14 +35,6 @@ const refusalStatus = {
 
 function refused(c: Context, code: keyof typeof refusalStatus) {
 	return c.json({ error: { code } }, refusalStatus[code]);
-}
-
-function databaseFailed(c: Context) {
-	return c.json({ error: { code: "DatabaseFailed" } }, 500);
-}
-
-function badRequest(c: Context) {
-	return c.json({ error: { code: "BadRequest" } }, 400);
 }
 
 // The public list and the owner's add, rename and remove. Checks run in the

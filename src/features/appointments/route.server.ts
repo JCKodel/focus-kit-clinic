@@ -3,6 +3,12 @@ import type { DatabaseSync } from "node:sqlite";
 import { type Context, Hono } from "hono";
 import { idOf } from "../../lib/id.ts";
 import { err, ok, type Result } from "../../lib/result.ts";
+import {
+	badRequest,
+	clinicNotSetUp,
+	databaseFailed,
+	professionalNotFound,
+} from "../../server/answers.server.ts";
 import { findClinic } from "../clinic/repository.server.ts";
 import { findActiveProfessionals } from "../professionals/repository.server.ts";
 import type { Professional } from "../professionals/rules.ts";
@@ -67,14 +73,6 @@ const refusalStatus: Record<BookingRefusal, 400 | 409> = {
 	SlotTaken: 409,
 };
 
-function databaseFailed(c: Context) {
-	return c.json({ error: { code: "DatabaseFailed" } }, 500);
-}
-
-function notFound(c: Context) {
-	return c.json({ error: { code: "ProfessionalNotFound" } }, 404);
-}
-
 function appointmentNotFound(c: Context) {
 	return c.json({ error: { code: "AppointmentNotFound" } }, 404);
 }
@@ -96,17 +94,15 @@ function slotsOf(
 	professionalId: number | undefined,
 	now: Date,
 ): Result<{ professional: Professional; input: SlotInput }, Response> {
-	if (professionalId === undefined) return err(notFound(c));
+	if (professionalId === undefined) return err(professionalNotFound(c));
 	const active = findActiveProfessionals(db);
 	if (!active.ok) return err(databaseFailed(c));
 	const professional = active.value.find((p) => p.id === professionalId);
-	if (!professional) return err(notFound(c));
+	if (!professional) return err(professionalNotFound(c));
 	const clinic = findClinic(db);
 	if (!clinic.ok) return err(databaseFailed(c));
 	// A professional exists only once the clinic is set up; kept for the types.
-	if (!clinic.value) {
-		return err(c.json({ error: { code: "ClinicNotSetUp" } }, 500));
-	}
+	if (!clinic.value) return err(clinicNotSetUp(c));
 	const { timeZone, slotMinutes } = clinic.value;
 	const periods = findWorkingPeriods(db, professionalId);
 	if (!periods.ok) return err(databaseFailed(c));
@@ -141,9 +137,7 @@ export function appointmentsRoute(db: DatabaseSync) {
 		})
 		.post("/appointments", async (c) => {
 			const body: unknown = await c.req.json().catch(() => undefined);
-			if (!isBookingBody(body)) {
-				return c.json({ error: { code: "BadRequest" } }, 400);
-			}
+			if (!isBookingBody(body)) return badRequest(c);
 			const read = slotsOf(db, c, body.professionalId, new Date());
 			if (!read.ok) return read.error;
 			const { professional, input } = read.value;
@@ -175,9 +169,7 @@ export function appointmentsRoute(db: DatabaseSync) {
 		})
 		.post("/appointments/cancel", async (c) => {
 			const body: unknown = await c.req.json().catch(() => undefined);
-			if (!isCancelBody(body)) {
-				return c.json({ error: { code: "BadRequest" } }, 400);
-			}
+			if (!isCancelBody(body)) return badRequest(c);
 			const phone = checkClientPhone(body.clientPhone);
 			const code = normalizeBookingCode(body.bookingCode);
 			if (!phone.ok || !code.ok) return appointmentNotFound(c);
@@ -188,9 +180,7 @@ export function appointmentsRoute(db: DatabaseSync) {
 			const clinic = findClinic(db);
 			if (!clinic.ok) return databaseFailed(c);
 			// An appointment exists only once the clinic is set up; kept for the types.
-			if (!clinic.value) {
-				return c.json({ error: { code: "ClinicNotSetUp" } }, 500);
-			}
+			if (!clinic.value) return clinicNotSetUp(c);
 			const cancelled = cancel(appointment.startsAt, new Date());
 			if (!cancelled.ok) {
 				return c.json({ error: { code: cancelled.error } }, 409);

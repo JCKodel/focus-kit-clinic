@@ -76,8 +76,8 @@ src/
   `{ update, send }`: it checks the state the person acted on, `send` says
   at once whether to call, `update` writes the answer of the check onto
   the current state, and the call sends the state that was checked.
-  `submitStarted` (appointments) is the first occurrence; `saveStarted`
-  (weeklyHours) still returns a whole state, until its own delivery.
+  `submitStarted` (appointments) is the first occurrence and `saveStarted`
+  (weeklyHours) the second; a later delivery declares the shape once.
   The event functions receive their repositories as a parameter, the real
   ones by default (`<name>Repositories`), and the clock as `now`: no
   function there reads it. `use<Feature>.ts` keeps only the React part:

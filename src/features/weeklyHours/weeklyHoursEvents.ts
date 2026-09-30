@@ -132,31 +132,38 @@ function withoutKeys(drafts: DraftPeriod[]): WorkingPeriod[] {
 }
 
 // The rule is checked here only to place the message beside the refused
-// period; the server checks it again.
+// period; the server checks it again. The check reads `state`, the one the
+// person acted on; `update` puts its answer on the current state, so what
+// was typed, added or removed meanwhile survives.
 export function saveStarted(state: WeeklyHoursState): {
-	state: WeeklyHoursState;
+	update: (current: WeeklyHoursState) => WeeklyHoursState;
 	send: boolean;
 } {
 	const { slotMinutes, periods: drafts } = state;
-	if (slotMinutes === undefined) return { state, send: false };
+	if (slotMinutes === undefined) {
+		return { update: (current) => current, send: false };
+	}
 	const checked = setWeeklyHours(withoutKeys(drafts), slotMinutes);
 	if (!checked.ok) {
 		const { code, index } = checked.error;
+		const refusal = { code, key: drafts[index].key };
 		return {
-			state: {
-				...state,
-				unreachable: false,
-				refusal: { code, key: drafts[index].key },
-			},
+			update: (current) => ({ ...current, unreachable: false, refusal }),
 			send: false,
 		};
 	}
 	return {
-		state: { ...state, unreachable: false, refusal: undefined },
+		update: (current) => ({
+			...current,
+			unreachable: false,
+			refusal: undefined,
+		}),
 		send: true,
 	};
 }
 
+// `drafts` are the periods of the state given to `saveStarted`, the one the
+// person acted on.
 export async function save(
 	professionalId: number,
 	drafts: DraftPeriod[],

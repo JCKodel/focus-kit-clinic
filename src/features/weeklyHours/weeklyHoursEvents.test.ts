@@ -123,27 +123,62 @@ describe("saving", () => {
 			"13:00",
 		);
 
-		const { state, send } = saveStarted({ ...typed, unreachable: true });
+		const acted = { ...typed, unreachable: true };
+		const { update, send } = saveStarted(acted);
 
 		expect(send).toBe(false);
-		expect(state).toMatchObject({
+		expect(update(acted)).toMatchObject({
 			unreachable: false,
 			refusal: { code: "WorkingPeriodTooShort", key: 0 },
 		});
 	});
 
+	it("sends the checked week and keeps a time typed after the click", () => {
+		const acted = { ...loaded, unreachable: true };
+		const { update, send } = saveStarted(acted);
+
+		const current = typeTime(acted, 1, "end", "19:00");
+
+		expect(send).toBe(true);
+		expect(update(current)).toEqual({
+			...current,
+			unreachable: false,
+			refusal: undefined,
+		});
+		expect(update(current).periods[1].end).toBe("19:00");
+	});
+
+	it("refuses the checked week and keeps a time typed after the click", () => {
+		const acted = typeTime(loaded, 0, "end", "09:15");
+		const { update, send } = saveStarted(acted);
+
+		const current = typeTime(acted, 1, "end", "19:00");
+
+		expect(send).toBe(false);
+		expect(update(current)).toEqual({
+			...current,
+			unreachable: false,
+			refusal: { code: "WorkingPeriodTooShort", key: 0 },
+		});
+		expect(update(current).periods[1].end).toBe("19:00");
+	});
+
 	it("sends nothing before the load", () => {
-		expect(saveStarted(initialWeeklyHoursState).send).toBe(false);
+		const { update, send } = saveStarted(initialWeeklyHoursState);
+
+		expect(send).toBe(false);
+		expect(update(loaded)).toBe(loaded);
 	});
 
 	it("clears the old refusal when it sends", () => {
-		const { state, send } = saveStarted({
+		const acted: WeeklyHoursState = {
 			...loaded,
 			refusal: { code: "InvalidWorkingPeriod", key: 1 },
-		});
+		};
+		const { update, send } = saveStarted(acted);
 
 		expect(send).toBe(true);
-		expect(state.refusal).toBeUndefined();
+		expect(update(acted).refusal).toBeUndefined();
 	});
 
 	it("sends the periods without keys and reports saved", async () => {

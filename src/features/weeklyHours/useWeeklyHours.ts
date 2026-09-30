@@ -67,7 +67,7 @@ export function useWeeklyHours(professionalId: number, section: HoursSection) {
 
 	const save = useCallback(async () => {
 		const started = saveStarted(state);
-		setState(started.state);
+		setState(started.update);
 		if (!started.send) return;
 		sectionRef.current.saving();
 		const { update, report } = await saveEvent(professionalId, state.periods);

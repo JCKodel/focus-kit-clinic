@@ -1,4 +1,5 @@
 import { err, ok, type Result } from "../../lib/result.ts";
+import { minutesOf } from "../../lib/time.ts";
 
 export type Weekday = 1 | 2 | 3 | 4 | 5 | 6 | 7;
 
@@ -20,10 +21,6 @@ export const weekdays: Weekday[] = [1, 2, 3, 4, 5, 6, 7];
 
 // 00:00 to 23:55, zero-padded, on a 5 minute step.
 const validTime = /^([01]\d|2[0-3]):[0-5][05]$/;
-
-function minutesOf(time: string): number {
-	return Number(time.slice(0, 2)) * 60 + Number(time.slice(3, 5));
-}
 
 function isWeekday(value: unknown): value is Weekday {
 	return Number.isInteger(value) && Number(value) >= 1 && Number(value) <= 7;

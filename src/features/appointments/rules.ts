@@ -1,5 +1,6 @@
 import { checkName } from "../../lib/name.ts";
 import { err, ok, type Result } from "../../lib/result.ts";
+import { minutesOf } from "../../lib/time.ts";
 import type { WorkingPeriod } from "../weeklyHours/rules.ts";
 import { addDays, clinicDateOf, instantAt, weekdayOf } from "./clinicTime.ts";
 
@@ -42,10 +43,6 @@ export type Booking = {
 	clientName: string;
 	clientPhone: string;
 };
-
-function minutesOf(time: string): number {
-	return Number(time.slice(0, 2)) * 60 + Number(time.slice(3, 5));
-}
 
 // The free slot starts, as toISOString(), ascending (docs/03, invariants 1 to
 // 3). Cut in clinic wall time from each period's start, for every clinic date

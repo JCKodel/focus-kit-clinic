@@ -51,7 +51,8 @@ src/
     strings.ts             every text the user reads in this feature
   app/                     client shell: entry, path switch, layout
   server/                  server shell: entry, setup command, database,
-                           migrations, password, session
+                           migrations, password, session, the error
+                           answers routes share
   lib/                     what two features already share: result.ts,
                            email.ts (trim and lower case the owner email),
                            name.ts (trim, 1 to 80 characters: clinic,

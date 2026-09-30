@@ -167,3 +167,5 @@ Errors are `{ "error": { "code": "<Code>" } }`. Besides the domain codes of
 docs/03, two infrastructure codes exist: `BadRequest` (400, a body of the
 wrong shape) and `DatabaseFailed` (500, a SQLite exception caught by a
 repository through `query` or `transaction` in `database.server.ts`).
+The answers more than one route writes are in
+`src/server/answers.server.ts`.

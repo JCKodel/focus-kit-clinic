@@ -4,6 +4,7 @@ import type { Context, MiddlewareHandler } from "hono";
 import { getCookie } from "hono/cookie";
 import { isSessionLive, sessionDays } from "../features/signIn/rules.ts";
 import type { Result } from "../lib/result.ts";
+import { databaseFailed, notSignedIn } from "./answers.server.ts";
 import { type DatabaseFailed, query } from "./database.server.ts";
 
 export type SessionRow = {
@@ -97,12 +98,4 @@ export function requireSession(db: DatabaseSync): MiddlewareHandler {
 		}
 		await next();
 	};
-}
-
-function notSignedIn(c: Context) {
-	return c.json({ error: { code: "NotSignedIn" } }, 401);
-}
-
-function databaseFailed(c: Context) {
-	return c.json({ error: { code: "DatabaseFailed" } }, 500);
 }

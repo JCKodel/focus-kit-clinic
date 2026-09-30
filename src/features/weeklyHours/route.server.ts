@@ -2,6 +2,12 @@ import type { DatabaseSync } from "node:sqlite";
 import { type Context, Hono } from "hono";
 import { idOf } from "../../lib/id.ts";
 import { err, ok, type Result } from "../../lib/result.ts";
+import {
+	badRequest,
+	clinicNotSetUp,
+	databaseFailed,
+	professionalNotFound,
+} from "../../server/answers.server.ts";
 import { requireSession } from "../../server/session.server.ts";
 import { findClinic } from "../clinic/repository.server.ts";
 import { findActiveProfessionals } from "../professionals/repository.server.ts";
@@ -24,14 +30,6 @@ function isHoursBody(body: unknown): body is HoursBody {
 	return Array.isArray(body.periods) && body.periods.every(isWorkingPeriod);
 }
 
-function databaseFailed(c: Context) {
-	return c.json({ error: { code: "DatabaseFailed" } }, 500);
-}
-
-function notFound(c: Context) {
-	return c.json({ error: { code: "ProfessionalNotFound" } }, 404);
-}
-
 // What both routes check after the session and the body: the professional
 // exists and is active, and the clinic's appointment length; else the answer.
 function professionalAndSlot(
@@ -39,18 +37,16 @@ function professionalAndSlot(
 	c: Context,
 ): Result<{ id: number; slotMinutes: number }, Response> {
 	const id = idOf(c.req.param("id") ?? "");
-	if (id === undefined) return err(notFound(c));
+	if (id === undefined) return err(professionalNotFound(c));
 	const active = findActiveProfessionals(db);
 	if (!active.ok) return err(databaseFailed(c));
 	if (!active.value.some((professional) => professional.id === id)) {
-		return err(notFound(c));
+		return err(professionalNotFound(c));
 	}
 	const clinic = findClinic(db);
 	if (!clinic.ok) return err(databaseFailed(c));
 	// A session exists only once the clinic is set up; kept for the types.
-	if (!clinic.value) {
-		return err(c.json({ error: { code: "ClinicNotSetUp" } }, 500));
-	}
+	if (!clinic.value) return err(clinicNotSetUp(c));
 	return ok({ id, slotMinutes: clinic.value.slotMinutes });
 }
 
@@ -68,9 +64,7 @@ export function weeklyHoursRoute(db: DatabaseSync) {
 		})
 		.put("/owner/professionals/:id/hours", requireSession(db), async (c) => {
 			const body: unknown = await c.req.json().catch(() => undefined);
-			if (!isHoursBody(body)) {
-				return c.json({ error: { code: "BadRequest" } }, 400);
-			}
+			if (!isHoursBody(body)) return badRequest(c);
 			const found = professionalAndSlot(db, c);
 			if (!found.ok) return found.error;
 			const { id, slotMinutes } = found.value;

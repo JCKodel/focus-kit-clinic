@@ -1,6 +1,11 @@
 import type { DatabaseSync } from "node:sqlite";
 import { Hono } from "hono";
 import { normaliseEmail } from "../../lib/email.ts";
+import {
+	badRequest,
+	databaseFailed,
+	notSignedIn,
+} from "../../server/answers.server.ts";
 import { checkPassword, fixedHash } from "../../server/password.server.ts";
 import {
 	clearSessionCookie,
@@ -37,11 +42,9 @@ export function signInRoute(db: DatabaseSync, options: Options = {}) {
 	return new Hono()
 		.post("/owner/sign-in", async (c) => {
 			const body: unknown = await c.req.json().catch(() => undefined);
-			if (!isSignInBody(body)) {
-				return c.json({ error: { code: "BadRequest" } }, 400);
-			}
+			if (!isSignInBody(body)) return badRequest(c);
 			const found = findOwner(db);
-			if (!found.ok) return c.json({ error: { code: "DatabaseFailed" } }, 500);
+			if (!found.ok) return databaseFailed(c);
 			const owner = found.value;
 
 			// Always one scrypt check, so a wrong email and a wrong password take
@@ -63,7 +66,7 @@ export function signInRoute(db: DatabaseSync, options: Options = {}) {
 				createdAt: now.toISOString(),
 				expiresAt: sessionExpiry(now),
 			});
-			if (!saved.ok) return c.json({ error: { code: "DatabaseFailed" } }, 500);
+			if (!saved.ok) return databaseFailed(c);
 			setSessionCookie(c, token);
 			return c.json({ email: owner.email });
 		})
@@ -71,17 +74,15 @@ export function signInRoute(db: DatabaseSync, options: Options = {}) {
 			const token = readSessionToken(c);
 			if (token) {
 				const deleted = deleteSession(db, hashToken(token));
-				if (!deleted.ok) {
-					return c.json({ error: { code: "DatabaseFailed" } }, 500);
-				}
+				if (!deleted.ok) return databaseFailed(c);
 			}
 			clearSessionCookie(c);
 			return c.body(null, 204);
 		})
 		.get("/owner/session", requireSession(db), (c) => {
 			const owner = findOwner(db);
-			if (!owner.ok) return c.json({ error: { code: "DatabaseFailed" } }, 500);
-			if (!owner.value) return c.json({ error: { code: "NotSignedIn" } }, 401);
+			if (!owner.ok) return databaseFailed(c);
+			if (!owner.value) return notSignedIn(c);
 			return c.json({ email: owner.value.email });
 		});
 }

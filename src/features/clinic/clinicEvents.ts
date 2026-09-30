@@ -1,3 +1,4 @@
+import type { Update } from "../../lib/update.ts";
 import { fetchClinicName } from "./api.ts";
 
 export type ClinicState =
@@ -14,7 +15,7 @@ export const clinicRepositories: ClinicRepositories = { fetchClinicName };
 
 export async function load(
 	repositories = clinicRepositories,
-): Promise<(current: ClinicState) => ClinicState> {
+): Promise<Update<ClinicState>> {
 	const result = await repositories.fetchClinicName();
 	if (result.ok) return () => ({ kind: "ready", name: result.value });
 	return result.error.code === "ClinicNotSetUp"

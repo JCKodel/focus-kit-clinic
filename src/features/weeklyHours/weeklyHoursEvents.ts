@@ -1,3 +1,4 @@
+import type { Started, Update } from "../../lib/update.ts";
 import {
 	fetchWeeklyHours,
 	putWeeklyHours,
@@ -39,7 +40,7 @@ export const initialWeeklyHoursState: WeeklyHoursState = {
 export type WeeklyHoursReport = "saving" | "saved" | "failed" | SectionRefusal;
 
 export type WeeklyHoursAnswer = {
-	update: (current: WeeklyHoursState) => WeeklyHoursState;
+	update: Update<WeeklyHoursState>;
 	report?: WeeklyHoursReport;
 };
 
@@ -135,10 +136,9 @@ function withoutKeys(drafts: DraftPeriod[]): WorkingPeriod[] {
 // period; the server checks it again. The check reads `state`, the one the
 // person acted on; `update` puts its answer on the current state, so what
 // was typed, added or removed meanwhile survives.
-export function saveStarted(state: WeeklyHoursState): {
-	update: (current: WeeklyHoursState) => WeeklyHoursState;
-	send: boolean;
-} {
+export function saveStarted(
+	state: WeeklyHoursState,
+): Started<WeeklyHoursState> {
 	const { slotMinutes, periods: drafts } = state;
 	if (slotMinutes === undefined) {
 		return { update: (current) => current, send: false };

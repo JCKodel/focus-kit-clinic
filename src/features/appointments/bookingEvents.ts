@@ -1,3 +1,4 @@
+import type { Started, Update } from "../../lib/update.ts";
 import { fetchProfessionals } from "../professionals/api.ts";
 import type { Professional } from "../professionals/rules.ts";
 import { type Booked, fetchSlots, postAppointment, type Slots } from "./api.ts";
@@ -87,9 +88,7 @@ export type BookingNext =
 	// the state the booking is made from
 	| { next: "submit"; state: BookingState };
 
-export type BookingOutcome =
-	| { update: (current: BookingState) => BookingState }
-	| BookingNext;
+export type BookingOutcome = { update: Update<BookingState> } | BookingNext;
 
 // The free slots grouped by clinic date, earliest first, as the server
 // answers them in order.
@@ -255,10 +254,7 @@ export function done(state: BookingState): BookingState {
 // and send nothing; the server checks them again. The check reads `state`,
 // the one the person acted on; `update` puts its answer on the current
 // state, so what was typed meanwhile survives.
-export function submitStarted(state: BookingState): {
-	update: (current: BookingState) => BookingState;
-	send: boolean;
-} {
+export function submitStarted(state: BookingState): Started<BookingState> {
 	if (state.step.kind !== "form" || !state.slots) {
 		return { update: (current) => current, send: false };
 	}

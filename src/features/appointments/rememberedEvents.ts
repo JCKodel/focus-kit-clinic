@@ -1,3 +1,4 @@
+import type { Update } from "../../lib/update.ts";
 import { type Cancelled, postCancellation } from "./api.ts";
 import {
 	forget,
@@ -95,7 +96,7 @@ export async function confirm(
 	appointment: RememberedAppointment,
 	now: Date,
 	repositories = rememberedRepositories,
-): Promise<(current: RememberedState) => RememberedState> {
+): Promise<Update<RememberedState>> {
 	const { bookingCode, clientPhone } = appointment;
 	const result = await repositories.postCancellation({
 		clientPhone,

@@ -1,3 +1,4 @@
+import type { Update } from "../../lib/update.ts";
 import { fetchSession, signIn, signOut } from "./api.ts";
 
 export type OwnerError = "SignInRefused" | "ServerUnreachable";
@@ -21,11 +22,9 @@ export const ownerRepositories: OwnerRepositories = {
 	signOut,
 };
 
-type Update = (current: OwnerState) => OwnerState;
-
 export async function checkSession(
 	repositories = ownerRepositories,
-): Promise<Update> {
+): Promise<Update<OwnerState>> {
 	const result = await repositories.fetchSession();
 	if (result.ok) {
 		return () => ({ kind: "signedIn", email: result.value, busy: false });
@@ -44,7 +43,7 @@ export async function submitSignIn(
 	email: string,
 	password: string,
 	repositories = ownerRepositories,
-): Promise<Update> {
+): Promise<Update<OwnerState>> {
 	const result = await repositories.signIn(email, password);
 	return () =>
 		result.ok
@@ -59,7 +58,7 @@ export function submitSignOutStarted(email: string): OwnerState {
 export async function submitSignOut(
 	email: string,
 	repositories = ownerRepositories,
-): Promise<Update> {
+): Promise<Update<OwnerState>> {
 	const result = await repositories.signOut();
 	return () =>
 		result.ok

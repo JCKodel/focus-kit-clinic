@@ -57,7 +57,10 @@ src/
                            name.ts (trim, 1 to 80 characters: clinic,
                            professional and client names),
                            request.ts (fetch to Result, for every api.ts),
-                           id.ts (the positive whole id in a route path)
+                           id.ts (the positive whole id in a route path),
+                           update.ts (Update and Started: the answer of an
+                           event and of a starter that decides whether to
+                           send)
 ```
 
 * The app shell has no router library: `src/app/main.tsx` shows the owner
@@ -77,7 +80,8 @@ src/
   at once whether to call, `update` writes the answer of the check onto
   the current state, and the call sends the state that was checked.
   `submitStarted` (appointments) is the first occurrence and `saveStarted`
-  (weeklyHours) the second; a later delivery declares the shape once.
+  (weeklyHours) the second; the shape is declared once, as `Started` in
+  `src/lib/update.ts`.
   The event functions receive their repositories as a parameter, the real
   ones by default (`<name>Repositories`), and the clock as `now`: no
   function there reads it. `use<Feature>.ts` keeps only the React part:

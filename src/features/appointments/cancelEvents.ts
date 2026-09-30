@@ -1,3 +1,4 @@
+import type { Update } from "../../lib/update.ts";
 import { type CancelError, type Cancelled, postCancellation } from "./api.ts";
 import { forget } from "./remembered.ts";
 import { normalizeBookingCode } from "./rules.ts";
@@ -57,7 +58,7 @@ export async function submit(
 	code: string,
 	now: Date,
 	repositories = cancelRepositories,
-): Promise<(current: CancelState) => CancelState> {
+): Promise<Update<CancelState>> {
 	const result = await repositories.postCancellation({
 		clientPhone: phone,
 		bookingCode: code,

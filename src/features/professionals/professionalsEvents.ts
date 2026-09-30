@@ -1,3 +1,4 @@
+import type { Update } from "../../lib/update.ts";
 import type { WeeklyHoursReport } from "../weeklyHours/weeklyHoursEvents.ts";
 import {
 	deleteProfessional,
@@ -55,15 +56,13 @@ export const professionalsRepositories: ProfessionalsRepositories = {
 	deleteProfessional,
 };
 
-type Update = (current: ProfessionalsState) => ProfessionalsState;
-
 function isNameRefusal(code: string): code is NameRefusal {
 	return code === "InvalidProfessionalName" || code === "ProfessionalNameTaken";
 }
 
 export async function load(
 	repositories = professionalsRepositories,
-): Promise<Update> {
+): Promise<Update<ProfessionalsState>> {
 	const result = await repositories.fetchProfessionals();
 	return (s) =>
 		result.ok
@@ -79,7 +78,7 @@ function started(state: ProfessionalsState): ProfessionalsState {
 // The professional was removed meanwhile: say so and show the list anew.
 async function reloadGone(
 	repositories: ProfessionalsRepositories,
-): Promise<Update> {
+): Promise<Update<ProfessionalsState>> {
 	const result = await repositories.fetchProfessionals();
 	return (s) => ({
 		...s,
@@ -104,7 +103,7 @@ export function addStarted(state: ProfessionalsState): ProfessionalsState {
 export async function add(
 	name: string,
 	repositories = professionalsRepositories,
-): Promise<Update> {
+): Promise<Update<ProfessionalsState>> {
 	const result = await repositories.postProfessional(name);
 	return (s) => {
 		if (result.ok) {
@@ -146,7 +145,7 @@ export async function rename(
 	id: number,
 	name: string,
 	repositories = professionalsRepositories,
-): Promise<Update> {
+): Promise<Update<ProfessionalsState>> {
 	const result = await repositories.patchProfessional(id, name);
 	if (!result.ok && result.error.code === "ProfessionalNotFound") {
 		return reloadGone(repositories);
@@ -187,7 +186,7 @@ export function removeStarted(state: ProfessionalsState): ProfessionalsState {
 export async function remove(
 	id: number,
 	repositories = professionalsRepositories,
-): Promise<Update> {
+): Promise<Update<ProfessionalsState>> {
 	const result = await repositories.deleteProfessional(id);
 	if (!result.ok && result.error.code === "ProfessionalNotFound") {
 		return reloadGone(repositories);
@@ -223,7 +222,7 @@ export function openHours(
 export function hoursReported(
 	report: WeeklyHoursReport,
 	repositories = professionalsRepositories,
-): Update | Promise<Update> {
+): Update<ProfessionalsState> | Promise<Update<ProfessionalsState>> {
 	if (report === "saving") return started;
 	if (report === "saved") return (s) => ({ ...s, busy: false, row: undefined });
 	if (report === "failed") return (s) => ({ ...s, busy: false });

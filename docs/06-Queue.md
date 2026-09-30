@@ -39,6 +39,7 @@ section through one path tested in Node.
 [x] booking-submit       useBooking's submit publishes its in-flight state as an update and books with the state the hook read, not a ref written during render
 [x] hours-save           useWeeklyHours' save publishes its in-flight state as an update, so a time typed just before Save survives
 [x] hours-report         the hours editor's reports reach the professionals section as one WeeklyHoursReport and one tested event; finishes what orchestrator-tests left
+[x] update-type          one shared Update and Started type in lib/update.ts, settling the one shared copy clause; the first copies are in bookingEvents.ts and submitStarted
 [ ] m1.1-review          the review of milestone 1.1 as docs/05 §8 says: its paragraph clause by clause, then the code; confirmed findings open milestone 1.2
 ```
 

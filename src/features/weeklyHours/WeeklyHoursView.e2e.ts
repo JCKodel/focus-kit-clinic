@@ -480,7 +480,7 @@ test("shows the loading line until the hours answer", async ({ page }) => {
 	await expect(page.getByRole("button", { name: "Save hours" })).toHaveCount(0);
 });
 
-test("disables every button of the editor while a save is in flight", async ({
+test("disables every button and time input of the editor while a save is in flight", async ({
 	page,
 }) => {
 	const name = tagged("Ana");
@@ -498,6 +498,10 @@ test("disables every button of the editor while a save is in flight", async ({
 	await expect(buttons.first()).toBeDisabled();
 	for (const button of await buttons.all()) await expect(button).toBeDisabled();
 	expect(await buttons.count()).toBe(1 + 7 + 2);
+
+	const times = hours.locator('input[type="time"]');
+	await expect(times).toHaveCount(2);
+	for (const time of await times.all()) await expect(time).toBeDisabled();
 });
 
 test("says the server cannot be reached with Cancel only when the hours cannot be read", async ({

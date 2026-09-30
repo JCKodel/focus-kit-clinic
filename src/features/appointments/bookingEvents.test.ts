@@ -271,13 +271,16 @@ describe("moving between the steps", () => {
 });
 
 describe("booking", () => {
-	it("sends the checked form and keeps a name typed after the click", () => {
+	it("sends the checked form and marks it busy", () => {
 		const { update, send } = submitStarted(onForm);
-		expect(send).toBe(true);
 
-		expect(update({ ...onForm, name: "Rita Sousa Lima" })).toMatchObject({
-			name: "Rita Sousa Lima",
+		expect(send).toBe(true);
+		expect(update(onForm)).toEqual({
+			...onForm,
+			nameError: undefined,
+			phoneError: undefined,
 			busy: true,
+			failed: undefined,
 		});
 	});
 

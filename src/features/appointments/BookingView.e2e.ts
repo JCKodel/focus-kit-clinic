@@ -360,7 +360,7 @@ test("a failed booking keeps what was typed, and Try again books", async ({
 	await expect(page.getByRole("heading", { name: "Booked" })).toBeVisible();
 });
 
-test("disables Book and Back while a booking is in flight", async ({
+test("disables Book, Back, name and phone while a booking is in flight", async ({
 	page,
 }) => {
 	const name = tagged("Ana");
@@ -375,6 +375,8 @@ test("disables Book and Back while a booking is in flight", async ({
 
 	await expect(button(page, "Book")).toBeDisabled();
 	await expect(button(page, "Back")).toBeDisabled();
+	await expect(page.getByLabel("Your name")).toBeDisabled();
+	await expect(page.getByLabel("Phone number")).toBeDisabled();
 });
 
 test("professional, day and time buttons are full width and at least 44px tall", async ({

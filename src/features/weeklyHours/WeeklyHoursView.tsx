@@ -86,6 +86,7 @@ export function WeeklyHoursView({ professional, busy, section }: Props) {
 							type="time"
 							step={300}
 							value={p.start}
+							disabled={busy}
 							onChange={(event) => typeTime(p.key, "start", event.target.value)}
 						/>
 					</label>
@@ -95,6 +96,7 @@ export function WeeklyHoursView({ professional, busy, section }: Props) {
 							type="time"
 							step={300}
 							value={p.end}
+							disabled={busy}
 							onChange={(event) => typeTime(p.key, "end", event.target.value)}
 						/>
 					</label>

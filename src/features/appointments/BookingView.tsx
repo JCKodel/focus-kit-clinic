@@ -154,6 +154,7 @@ export function BookingView() {
 								id="client-name"
 								autoComplete="name"
 								value={state.name}
+								disabled={busy}
 								onChange={(event) => typeName(event.target.value)}
 								style={field}
 							/>
@@ -168,6 +169,7 @@ export function BookingView() {
 								type="tel"
 								autoComplete="tel"
 								value={state.phone}
+								disabled={busy}
 								onChange={(event) => typePhone(event.target.value)}
 								style={field}
 							/>

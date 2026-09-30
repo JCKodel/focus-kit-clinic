@@ -133,19 +133,16 @@ describe("saving", () => {
 		});
 	});
 
-	it("sends the checked week and keeps a time typed after the click", () => {
+	it("sends the checked week and clears its refusal and unreachable", () => {
 		const acted = { ...loaded, unreachable: true };
 		const { update, send } = saveStarted(acted);
 
-		const current = typeTime(acted, 1, "end", "19:00");
-
 		expect(send).toBe(true);
-		expect(update(current)).toEqual({
-			...current,
+		expect(update(acted)).toEqual({
+			...acted,
 			unreachable: false,
 			refusal: undefined,
 		});
-		expect(update(current).periods[1].end).toBe("19:00");
 	});
 
 	it("refuses the checked week and keeps a time typed after the click", () => {

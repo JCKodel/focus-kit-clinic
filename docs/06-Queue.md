@@ -27,7 +27,9 @@ failed reload, docs/02 renders whole, and the code repeated across
 features has one shared copy, and useBooking's submit and useWeeklyHours'
 save publish their in-flight state as an update of the current state, as
 docs/01 says, and the weekly hours editor reports to the professionals
-section through one path tested in Node.
+section through one path tested in Node, and the weekly hours editor's
+From and To and the booking form's name and phone are disabled while a
+save or a booking is in flight.
 
 ```
 [x] orchestrator-tests   every use<Feature>.ts hook's events move to plain functions with repositories as a parameter, tested in Node
@@ -41,6 +43,7 @@ section through one path tested in Node.
 [x] hours-report         the hours editor's reports reach the professionals section as one WeeklyHoursReport and one tested event; finishes what orchestrator-tests left
 [x] update-type          one shared Update and Started type in lib/update.ts, settling the one shared copy clause; the first copies are in bookingEvents.ts and submitStarted
 [x] event-shapes         docs/01 names every event shape the code uses, when each is used and its first occurrence
+[x] busy-fields          the hours editor's From and To and the booking form's name and phone are disabled while a save or a booking is in flight
 [ ] m1.1-review          the review of milestone 1.1 as docs/05 §8 says: its paragraph clause by clause, then the code; confirmed findings open milestone 1.2
 ```
 
